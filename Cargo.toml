@@ -1,0 +1,32 @@
+[package]
+name = "gos"
+version = "0.1.0"
+edition = "2021"
+authors = ["GOS Team"]
+description = "Rust implementation of GOS (Graph Orchestration Specification)"
+license = "MIT"
+
+[dependencies]
+pest = "2.5"
+pest_derive = "2.5"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+chrono = { version = "0.4", features = ["serde"] }
+thiserror = "1.0"
+regex = "1.10"
+
+[dev-dependencies]
+pretty_assertions = "1.4"
+tempfile = "3.8"
+
+[lib]
+name = "gos"
+path = "src/lib.rs"
+
+[[bin]]
+name = "gos"
+path = "src/main.rs"
+
+[[example]]
+name = "compiler_demo"
+path = "examples/compiler_demo.rs"

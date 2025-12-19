@@ -89,7 +89,7 @@ src/
 ### 作为库使用
 
 ```rust
-use gos_parser::{parse, ParseOptions};
+use gos::{parse, ParseOptions};
 
 let content = r#"
 var {
