@@ -40,7 +40,7 @@ pub mod format;
 pub mod parser;
 
 #[cfg(test)]
-pub mod test;
+pub mod tests;
 
 // Re-export main types for convenience
 pub use ast::*;
@@ -99,7 +99,7 @@ pub fn version() -> &'static str {
 }
 
 #[cfg(test)]
-mod tests {
+mod mytests {
     use super::*;
 
     #[test]
