@@ -35,6 +35,7 @@
 
 pub mod ast;
 pub mod compiler;
+pub mod decompiler;
 pub mod error;
 pub mod format;
 pub mod parser;
@@ -45,6 +46,7 @@ pub mod tests;
 // Re-export main types for convenience
 pub use ast::*;
 pub use compiler::{compile_ast, compile_ast_with_options, Compiler, CompileOptions, CompileResult};
+pub use decompiler::{decompile, decompile_from_data, DecompileOptions, DecompileResult};
 pub use error::{ParseError, ParseResult, ErrorCollection};
 pub use format::{format_from_data, format, Formatter, IndentBuffer};
 pub use parser::{parse_gos, ParseOptions};

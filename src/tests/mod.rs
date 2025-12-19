@@ -6,6 +6,7 @@
 pub mod parser_tests;
 pub mod error_tests;
 pub mod integration_tests;
+pub mod decompiler_tests;
 
 // Test utilities and common fixtures
 use crate::{parse_gos, ParseOptions, AstNodeEnum};
