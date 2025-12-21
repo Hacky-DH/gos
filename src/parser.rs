@@ -90,7 +90,7 @@ impl GosParserImpl {
             match inner_pair.as_rule() {
                 Rule::statements => {
                     for stmt_pair in inner_pair.into_inner() {
-                        statements.push(self.parse_statement(stmt_pair)?);
+                        statements.push(self.parse_statement_def(stmt_pair)?);
                     }
                 }
                 Rule::EOI => break,
@@ -120,54 +120,46 @@ impl GosParserImpl {
         }))
     }
 
-    fn parse_statement(&mut self, pair: pest::iterators::Pair<Rule>) -> ParseResult<AstNodeEnum> {
+    fn parse_statement_def(
+        &mut self,
+        pair: pest::iterators::Pair<Rule>,
+    ) -> ParseResult<AstNodeEnum> {
         for inner_pair in pair.into_inner() {
             match inner_pair.as_rule() {
-                Rule::vars => return self.parse_vars(inner_pair),
-                Rule::imports => return self.parse_imports(inner_pair),
-                Rule::graphs => return self.parse_graphs(inner_pair),
-                Rule::ops => return self.parse_ops(inner_pair),
-                Rule::comments => return self.parse_comments(inner_pair),
-                Rule::multiline_comments => return self.parse_multiline_comments(inner_pair),
-                Rule::nodes => return self.parse_nodes(inner_pair),
+                Rule::statement_end => return self.parse_statement_end(inner_pair),
+                Rule::COMMENT => return self.parse_comment(inner_pair),
+                _ => (),
+            }
+        }
+        Err(ParseError::general("Empty statement def"))
+    }
+
+    fn parse_statement_end(
+        &mut self,
+        pair: pest::iterators::Pair<Rule>,
+    ) -> ParseResult<AstNodeEnum> {
+        for inner_pair in pair.into_inner() {
+            match inner_pair.as_rule() {
+                Rule::all_statements => return self.parse_all_statements(inner_pair),
+                Rule::ENDMARKER => {} // Skip semicolon
                 _ => {}
             }
         }
+        Err(ParseError::general("Empty statement"))
+    }
 
+    fn parse_all_statements(&mut self, pair: pest::iterators::Pair<Rule>) -> ParseResult<AstNodeEnum> {
+        for inner_pair in pair.into_inner() {
+            match inner_pair.as_rule() {
+                Rule::var_def => return self.parse_var_def(inner_pair),
+                Rule::import_def => return self.parse_import_def(inner_pair),
+                Rule::graph_def => return self.parse_graph_def(inner_pair),
+                Rule::op_def => return self.parse_op_def(inner_pair),
+                Rule::node_def => return self.parse_node_def(inner_pair),
+                _ => {}
+            }
+        }
         Err(ParseError::general("Unknown statement type"))
-    }
-
-    fn parse_vars(&mut self, pair: pest::iterators::Pair<Rule>) -> ParseResult<AstNodeEnum> {
-        let mut var_defs = Vec::new();
-
-        for inner_pair in pair.into_inner() {
-            if let Ok(var_def) = self.parse_var_def_end(inner_pair) {
-                var_defs.push(var_def);
-            }
-        }
-
-        if var_defs.len() == 1 {
-            Ok(var_defs.into_iter().next().unwrap())
-        } else {
-            // Multiple var definitions - wrap in a container or return the first one
-            Ok(var_defs.into_iter().next().unwrap_or_else(|| {
-                AstNodeEnum::VarDef(VarDef {
-                    position: Position::new(1, 1, 1),
-                    children: vec![],
-                    alias: None,
-                    offset: None,
-                })
-            }))
-        }
-    }
-
-    fn parse_var_def_end(&mut self, pair: pest::iterators::Pair<Rule>) -> ParseResult<AstNodeEnum> {
-        for inner_pair in pair.into_inner() {
-            if inner_pair.as_rule() == Rule::var_def {
-                return self.parse_var_def(inner_pair);
-            }
-        }
-        Err(ParseError::general("Invalid var definition"))
     }
 
     fn parse_var_def(&mut self, pair: pest::iterators::Pair<Rule>) -> ParseResult<AstNodeEnum> {
@@ -184,17 +176,13 @@ impl GosParserImpl {
         // Skip LBRACE
         inner_pairs.next();
 
-        // Parse var_block
-        if let Some(var_block_pair) = inner_pairs.next() {
-            if var_block_pair.as_rule() == Rule::var_block {
-                for attr_defs_pair in var_block_pair.into_inner() {
-                    if attr_defs_pair.as_rule() == Rule::attr_defs {
-                        // Parse all attribute definitions within attr_defs
-                        for attr_def_end_pair in attr_defs_pair.into_inner() {
-                            if let Ok(attr) = self.parse_attr_def_end(attr_def_end_pair) {
-                                children.push(attr);
-                            }
-                        }
+        // Parse optional attr_defs
+        if let Some(attr_defs_pair) = inner_pairs.next() {
+            if attr_defs_pair.as_rule() == Rule::attr_defs {
+                // Parse all attribute definitions within attr_defs
+                for attr_def_end_pair in attr_defs_pair.into_inner() {
+                    if let Ok(attr) = self.parse_attr_def_end(attr_def_end_pair) {
+                        children.push(attr);
                     }
                 }
             }
@@ -203,7 +191,7 @@ impl GosParserImpl {
         // Skip RBRACE
         inner_pairs.next();
 
-        // Check for 'as' clause
+        // Check for optional 'as' clause
         if let Some(as_pair) = inner_pairs.next() {
             if as_pair.as_rule() == Rule::as_keyword {
                 if let Some(identifier_pair) = inner_pairs.next() {
@@ -223,7 +211,7 @@ impl GosParserImpl {
     fn parse_attr_defs(&mut self, pair: pest::iterators::Pair<Rule>) -> ParseResult<AstNodeEnum> {
         for inner_pair in pair.into_inner() {
             match inner_pair.as_rule() {
-                Rule::attr_def_end => return self.parse_attr_def_end(inner_pair),
+                Rule::attr_def => return self.parse_attr_def(inner_pair),
                 _ => {}
             }
         }
@@ -289,59 +277,7 @@ impl GosParserImpl {
         }))
     }
 
-    fn parse_imports(&mut self, pair: pest::iterators::Pair<Rule>) -> ParseResult<AstNodeEnum> {
-        let mut import_items = Vec::new();
-
-        for inner_pair in pair.into_inner() {
-            if let Ok(import_def) = self.parse_import_def_end(inner_pair) {
-                if let AstNodeEnum::Import(import) = import_def {
-                    import_items.extend(import.items);
-                }
-            }
-        }
-
-        let position = if import_items.is_empty() {
-            Position::new(1, 1, 1)
-        } else {
-            let first_pos = &import_items[0].position;
-            let last_pos = &import_items[import_items.len() - 1].position;
-            Position {
-                line: first_pos.line,
-                end_line: last_pos.end_line,
-                start: first_pos.start,
-                end: last_pos.end,
-            }
-        };
-
-        Ok(AstNodeEnum::Import(Import {
-            position,
-            items: import_items,
-        }))
-    }
-
-    fn parse_import_def_end(
-        &mut self,
-        pair: pest::iterators::Pair<Rule>,
-    ) -> ParseResult<AstNodeEnum> {
-        for inner_pair in pair.into_inner() {
-            if inner_pair.as_rule() == Rule::import_def {
-                return self.parse_import_def(inner_pair);
-            }
-        }
-        Err(ParseError::general("Invalid import definition"))
-    }
-
     fn parse_import_def(&mut self, pair: pest::iterators::Pair<Rule>) -> ParseResult<AstNodeEnum> {
-        for inner_pair in pair.into_inner() {
-            match inner_pair.as_rule() {
-                Rule::import_name => return self.parse_import_name(inner_pair),
-                _ => {}
-            }
-        }
-        Err(ParseError::general("Invalid import definition"))
-    }
-
-    fn parse_import_name(&mut self, pair: pest::iterators::Pair<Rule>) -> ParseResult<AstNodeEnum> {
         let position = self.get_position(&pair);
         let mut items = Vec::new();
 
@@ -404,7 +340,7 @@ impl GosParserImpl {
         })
     }
 
-    fn parse_graphs(&mut self, pair: pest::iterators::Pair<Rule>) -> ParseResult<AstNodeEnum> {
+    fn parse_graph_def(&mut self, pair: pest::iterators::Pair<Rule>) -> ParseResult<AstNodeEnum> {
         let position = self.get_position(&pair);
         let mut children = Vec::new();
         let mut alias = None;
@@ -415,53 +351,6 @@ impl GosParserImpl {
 
         eprintln!("DEBUG: parse_graphs called with: {}", pair.as_str());
 
-        for inner_pair in pair.into_inner() {
-            eprintln!(
-                "DEBUG: parse_graphs inner_pair rule: {:?} -> {}",
-                inner_pair.as_rule(),
-                inner_pair.as_str()
-            );
-            match inner_pair.as_rule() {
-                Rule::graph_def_end => {
-                    // Process graph_def_end which contains the actual graph_def
-                    for graph_end_pair in inner_pair.into_inner() {
-                        eprintln!(
-                            "DEBUG: graph_def_end inner rule: {:?} -> {}",
-                            graph_end_pair.as_rule(),
-                            graph_end_pair.as_str()
-                        );
-                        if graph_end_pair.as_rule() == Rule::graph_def {
-                            self.process_graph_def(graph_end_pair, &mut children, &mut alias)?;
-                        }
-                    }
-                }
-                Rule::graph_def => {
-                    self.process_graph_def(inner_pair, &mut children, &mut alias)?;
-                }
-                _ => {}
-            }
-        }
-
-        eprintln!("DEBUG: GraphDef created with {} children", children.len());
-
-        Ok(AstNodeEnum::GraphDef(GraphDef {
-            position,
-            children,
-            alias,
-            version,
-            template_graph,
-            template_version,
-            offset,
-        }))
-    }
-
-    fn process_graph_def(
-        &mut self,
-        pair: pest::iterators::Pair<Rule>,
-        children: &mut Vec<AstNodeEnum>,
-        alias: &mut Option<Symbol>,
-    ) -> ParseResult<()> {
-        // Process graph_def contents
         for graph_pair in pair.into_inner() {
             match graph_pair.as_rule() {
                 Rule::graph_template => {
@@ -478,7 +367,7 @@ impl GosParserImpl {
                             stmt_pair.as_str()
                         );
 
-                        if stmt_pair.as_rule() == Rule::graph_stmt_end {
+                        if stmt_pair.as_rule() == Rule::graph_stmt_comment {
                             for stmt_content in stmt_pair.into_inner() {
                                 eprintln!(
                                     "DEBUG: stmt_content rule: {:?} -> {:?}",
@@ -512,7 +401,7 @@ impl GosParserImpl {
                 Rule::as_stmt => {
                     // Handle alias
                     let position = self.get_position(&graph_pair);
-                    *alias = Some(Symbol {
+                    alias = Some(Symbol {
                         position,
                         name: graph_pair.as_str().to_string(),
                         kind: SymbolKind::VarRef,
@@ -521,10 +410,21 @@ impl GosParserImpl {
                 _ => {}
             }
         }
-        Ok(())
+
+        eprintln!("DEBUG: GraphDef created with {} children", children.len());
+
+        Ok(AstNodeEnum::GraphDef(GraphDef {
+            position,
+            children,
+            alias,
+            version,
+            template_graph,
+            template_version,
+            offset,
+        }))
     }
 
-    fn parse_ops(&mut self, _pair: pest::iterators::Pair<Rule>) -> ParseResult<AstNodeEnum> {
+    fn parse_op_def(&mut self, _pair: pest::iterators::Pair<Rule>) -> ParseResult<AstNodeEnum> {
         // Simplified op parsing - implement based on needs
         Ok(AstNodeEnum::OpDef(OpDef {
             position: Position::new(1, 1, 1),
@@ -533,47 +433,6 @@ impl GosParserImpl {
             version: None,
             offset: None,
         }))
-    }
-
-    fn parse_nodes(&mut self, _pair: pest::iterators::Pair<Rule>) -> ParseResult<AstNodeEnum> {
-        // Simplified node parsing - implement based on needs
-        Ok(AstNodeEnum::NodeDef(NodeDef {
-            position: Position::new(1, 1, 1),
-            outputs: vec![],
-            value: NodeBlock {
-                position: Position::new(1, 1, 1),
-                name_or_ref: Symbol::new(Position::new(1, 1, 1), "dummy".to_string()),
-                inputs: None,
-                attrs: None,
-            },
-        }))
-    }
-
-    fn parse_comments(&mut self, pair: pest::iterators::Pair<Rule>) -> ParseResult<AstNodeEnum> {
-        // Get position and value before consuming the pair
-        let position = self.get_position(&pair);
-        let value = pair.as_str().to_string();
-
-        // The comments rule contains COMMENT+ (one or more comments)
-        // We'll take the first comment and parse it
-        for inner_pair in pair.into_inner() {
-            if inner_pair.as_rule() == Rule::COMMENT {
-                return self.parse_comment(inner_pair);
-            }
-        }
-
-        // If no inner COMMENT found, treat the whole pair as a comment
-        Ok(AstNodeEnum::Comment(Comment { position, value }))
-    }
-
-    fn parse_multiline_comments(
-        &mut self,
-        pair: pest::iterators::Pair<Rule>,
-    ) -> ParseResult<AstNodeEnum> {
-        let position = self.get_position(&pair);
-        let value = pair.as_str().to_string();
-
-        Ok(AstNodeEnum::Comment(Comment { position, value }))
     }
 
     fn parse_comment(&mut self, pair: pest::iterators::Pair<Rule>) -> ParseResult<AstNodeEnum> {
@@ -586,7 +445,7 @@ impl GosParserImpl {
     fn parse_value(&mut self, pair: pest::iterators::Pair<Rule>) -> ParseResult<AstNodeEnum> {
         for inner_pair in pair.into_inner() {
             match inner_pair.as_rule() {
-                Rule::ONE_LINE_STRING => return self.parse_string_literal(inner_pair),
+                Rule::STRING => return self.parse_string_literal(inner_pair),
                 Rule::MULTI_LINE_STRING => return self.parse_multiline_string_literal(inner_pair),
                 Rule::NUMBER => return self.parse_number_literal(inner_pair),
                 Rule::FLOAT => return self.parse_float_literal(inner_pair),
@@ -869,7 +728,7 @@ impl GosParserImpl {
             Rule::if_condition => {
                 for inner_pair in pair.into_inner() {
                     match inner_pair.as_rule() {
-                        Rule::ONE_LINE_STRING | Rule::MULTI_LINE_STRING => {
+                        Rule::STRING | Rule::MULTI_LINE_STRING => {
                             return self.parse_string_literal(inner_pair);
                         }
                         _ => {}
@@ -950,10 +809,8 @@ impl GosParserImpl {
 
             match inner_pair.as_rule() {
                 Rule::graph_prop_def => return self.parse_graph_prop_def(inner_pair),
-                Rule::version_def => return self.parse_version_def(inner_pair),
                 Rule::condition_def => return self.parse_condition_def(inner_pair),
-                Rule::node_func_def => return self.parse_node_func_def(inner_pair),
-                Rule::edge_def => return self.parse_edge_def(inner_pair),
+                Rule::node_def => return self.parse_node_def(inner_pair),
                 _ => {
                     if self.options.debug {
                         eprintln!(
@@ -984,7 +841,7 @@ impl GosParserImpl {
                 Rule::value => {
                     value = Some(self.parse_value(inner_pair)?);
                 }
-                Rule::node_func_block => {
+                Rule::node_block => {
                     value = Some(self.parse_node_func_block(inner_pair)?);
                 }
                 Rule::dotted_name => {
@@ -1029,7 +886,7 @@ impl GosParserImpl {
                 Rule::inputs_def => {
                     // Parse inputs if needed
                 }
-                Rule::node_func_attrs => {
+                Rule::node_attrs => {
                     // Parse attributes like .with(...)
                     for attr_pair in inner_pair.into_inner() {
                         if attr_pair.as_rule() == Rule::node_param_block {
@@ -1047,15 +904,6 @@ impl GosParserImpl {
         }))
     }
 
-    // Placeholder implementations for other graph statement types
-    fn parse_version_def(&mut self, pair: pest::iterators::Pair<Rule>) -> ParseResult<AstNodeEnum> {
-        let position = self.get_position(&pair);
-        Ok(AstNodeEnum::Comment(Comment {
-            position,
-            value: "version_def".to_string(),
-        }))
-    }
-
     fn parse_condition_def(
         &mut self,
         pair: pest::iterators::Pair<Rule>,
@@ -1067,10 +915,7 @@ impl GosParserImpl {
         }))
     }
 
-    fn parse_node_func_def(
-        &mut self,
-        pair: pest::iterators::Pair<Rule>,
-    ) -> ParseResult<AstNodeEnum> {
+    fn parse_node_def(&mut self, pair: pest::iterators::Pair<Rule>) -> ParseResult<AstNodeEnum> {
         let position = self.get_position(&pair);
         let mut outputs = Vec::new();
         let mut node_block = None;
@@ -1092,7 +937,7 @@ impl GosParserImpl {
                     let symbol = self.parse_symbol(inner_pair, SymbolKind::NodeOutput)?;
                     outputs.push(symbol);
                 }
-                Rule::node_func_block => {
+                Rule::node_block => {
                     node_block = Some(self.parse_node_func_block_as_node_block(inner_pair)?);
                 }
                 _ => {}
@@ -1129,7 +974,7 @@ impl GosParserImpl {
                 Rule::inputs_def => {
                     inputs = Some(self.parse_node_inputs_def(inner_pair)?);
                 }
-                Rule::node_func_attrs => {
+                Rule::node_attrs => {
                     // Parse node function attributes like .version("1.0.0")
                     for attr_pair in inner_pair.into_inner() {
                         if let Ok(attr) = self.parse_node_func_attr(attr_pair) {
@@ -1279,7 +1124,7 @@ impl GosParserImpl {
                     name = Symbol::new(position.clone(), "as".to_string())
                         .with_kind(SymbolKind::NodeAttr);
                 }
-                Rule::ONE_LINE_STRING => {
+                Rule::STRING => {
                     let string_content = inner_pair.as_str();
                     let unquoted = &string_content[1..string_content.len() - 1]; // Remove quotes
                     value = NodeAttrValue::String(StringLiteral {
@@ -1297,14 +1142,6 @@ impl GosParserImpl {
             value,
             offset: None,
         })
-    }
-
-    fn parse_edge_def(&mut self, pair: pest::iterators::Pair<Rule>) -> ParseResult<AstNodeEnum> {
-        let position = self.get_position(&pair);
-        Ok(AstNodeEnum::Comment(Comment {
-            position,
-            value: "edge_def".to_string(),
-        }))
     }
 }
 

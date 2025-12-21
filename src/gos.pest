@@ -4,6 +4,7 @@
 WHITESPACE = _{ " " | "\t" | "\n" | "\r" }
 COMMENT = {
     "#" ~ (!"\n" ~ ANY)* |
+    "//" ~ (!"\n" ~ ANY)* |
     "/*" ~ (!"*/" ~ ANY)* ~ "*/"
 }
 
@@ -30,8 +31,6 @@ output = { "output" }
 depend = { "depend" }
 version = { "version" }
 with = { "with" }
-start = { "start" }
-end = { "end" }
 date = { "date" }
 config = { "config" }
 name = { "name" }
@@ -72,7 +71,7 @@ FLOAT = @{
 DATETIME = @{ ASCII_DIGIT{4} ~ "-" ~ ASCII_DIGIT{2} ~ "-" ~ ASCII_DIGIT{2} ~ "T" ~ ASCII_DIGIT{2} ~ ":" ~ ASCII_DIGIT{2} ~ ":" ~ ASCII_DIGIT{2} ~ "Z" }
 
 // Strings
-ONE_LINE_STRING = @{ 
+STRING = @{ 
     "\"" ~ (!"\"" ~ (("\\" ~ ANY) | (!"\\" ~ !"\n" ~ ANY)))* ~ "\"" |
     "'" ~ (!"'" ~ (("\\" ~ ANY) | (!"\\" ~ !"\n" ~ ANY)))* ~ "'"
 }
@@ -122,85 +121,72 @@ QUESTION = { "?" }
 // Main grammar rules
 gos = { SOI ~ statements? ~ EOI }
 
-statements = { statement+ }
+statements = { statement_def+ }
 
-statement = {
-    vars |
-    imports |
-    graphs |
-    ops |
-    comments |
-    nodes |
-    multiline_comments
+statement_def = {
+    statement_end |
+    COMMENT
 }
 
-multiline_comments = { MULTI_LINE_STRING+ }
+statement_end = { all_statements ~ ENDMARKER? }
 
-comments = { COMMENT+ }
+all_statements = {
+    var_def |
+    import_def |
+    graph_def |
+    op_def |
+    node_def
+}
 
 // Variable definitions
-vars = { var_def_end+ }
-var_def_end = { var_def ~ ENDMARKER? }
-var_def = { var ~ LBRACE ~ var_block ~ RBRACE ~ (as_keyword ~ all_identifier)? }
-var_block = { attr_defs? }
+var_def = { var ~ LBRACE ~ attr_defs? ~ RBRACE ~ (as_keyword ~ all_identifier)? }
 
-attr_defs = { attr_def_end+ }
-attr_def_end = { (attr_def | COMMENT) ~ ENDMARKER? }
+attr_defs = { attr_def_comment+ }
+attr_def_comment = { attr_def ~ ENDMARKER? | COMMENT }
 
 attr_def = {
     dotted_name ~ DEFINED_BY ~ value ~ (if_keyword ~ if_condition)? ~ (else_keyword ~ value)?
 }
 
 // Import definitions
-imports = { import_def_end+ }
-import_def_end = { import_def ~ ENDMARKER }
-import_def = { import_name }
-import_name = { import ~ dotted_as_names }
+import_def = { import ~ dotted_as_names }
 dotted_as_names = { dotted_as_name ~ (COMMA ~ dotted_as_name)* }
 dotted_as_name = { dotted_name ~ (as_keyword ~ all_identifier)? }
 dotted_name = @{ all_identifier ~ (DOT ~ all_identifier)* }
 
 // Graph definitions
-graphs = { graph_def_end+ }
-graph_def_end = { graph_def ~ ENDMARKER? }
 graph_def = { graph_template ~ LBRACE ~ graph_block ~ RBRACE ~ (as_keyword ~ as_stmt)? }
 graph_template = { graph ~ (COLON ~ as_stmt)? }
-as_stmt = { dotted_name ~ (LPAREN ~ ONE_LINE_STRING ~ RPAREN)? }
+as_stmt = { dotted_name ~ (LPAREN ~ STRING ~ RPAREN)? }
 
-graph_block = { graph_stmt_end* }
-graph_stmt_end = { (graph_stmt | COMMENT) ~ ENDMARKER? }
+graph_block = { graph_stmt_comment* }
+graph_stmt_comment = { graph_stmt ~ ENDMARKER? | COMMENT }
 
 graph_stmt = {
-    version_def |
-    start ~ DEFINED_BY ~ dotted_identifiers |
-    end ~ DEFINED_BY ~ dotted_identifiers |
     graph_prop_def |
-    graph_ref_def |
     condition_def |
-    node_func_def
+    node_def
 }
 
-graph_prop_def = { all_identifier ~ DEFINED_BY ~ value }
-graph_ref_def = { all_identifier ~ DEFINED_BY ~ dotted_name }
+graph_prop_def = { all_identifier ~ DEFINED_BY ~ (value | dotted_identifiers) }
 
 dotted_identifiers = { dotted_name ~ (COMMA ~ dotted_name)* }
 
 // Node definitions
-node_func_def = { dotted_identifiers ~ DEFINED_BY ~ node_func_block }
+node_def = { dotted_identifiers ~ DEFINED_BY ~ (node_block | for_loop_block) }
 
-node_func_block = {
-    dotted_name ~ LPAREN ~ inputs_def? ~ RPAREN ~ node_func_attrs* |
-    ref ~ LPAREN ~ dotted_name ~ LPAREN ~ inputs_def? ~ RPAREN ~ RPAREN ~ node_func_attrs* |
-    for_loop_block
+node_block = {
+    dotted_name ~ LPAREN ~ inputs_def? ~ RPAREN ~ node_attrs* |
+    ref ~ LPAREN ~ dotted_name ~ LPAREN ~ inputs_def? ~ RPAREN ~ RPAREN ~ node_attrs*
 }
 
-node_func_attrs = {
-    DOT ~ name ~ LPAREN ~ ONE_LINE_STRING ~ RPAREN |
-    DOT ~ version ~ LPAREN ~ ONE_LINE_STRING ~ RPAREN |
+node_attrs = {
+    DOT ~ name ~ LPAREN ~ STRING ~ RPAREN |
+    DOT ~ version ~ LPAREN ~ STRING ~ RPAREN |
     DOT ~ depend ~ LPAREN ~ dotted_identifiers ~ RPAREN |
     DOT ~ with ~ LPAREN ~ node_param_block ~ RPAREN |
     DOT ~ as_keyword ~ LPAREN ~ all_identifier ~ RPAREN |
-    DOT ~ condition ~ LPAREN ~ ONE_LINE_STRING ~ RPAREN |
+    DOT ~ condition ~ LPAREN ~ STRING ~ RPAREN |
     DOT ~ property ~ LPAREN ~ node_param_block ~ RPAREN |
     DOT ~ override ~ LPAREN ~ override_param? ~ RPAREN |
     DOT ~ log ~ LPAREN ~ node_param_block ~ RPAREN |
@@ -220,38 +206,35 @@ input_identifiers_paren = {
     LPAREN ~ dotted_name ~ COMMA ~ dotted_identifiers ~ RPAREN
 }
 
-node_param_block = { node_param_end+ }
-node_param_end = { (node_param | COMMENT) ~ COMMA? }
-node_param = { attr_def | ref_def }
+node_param_block = { node_param_comment+ }
+node_param_comment = { param_def ~ COMMA? | COMMENT }
+param_def = { attr_def | ref_def }
 
 ref_def = {
     dotted_name ~ DEFINED_BY ~ dotted_name ~ (if_keyword ~ if_condition)? ~ (or ~ value)?
 }
 
-if_condition = { MULTI_LINE_STRING | ONE_LINE_STRING | dotted_name }
+if_condition = { MULTI_LINE_STRING | STRING | dotted_name }
 
 // For loop blocks
 for_loop_block = {
     LBRACKET ~ for_loop_block_no_if ~ (if_keyword ~ if_condition)? ~ RBRACKET
 }
-for_loop_block_no_if = { node_func_block ~ for ~ dotted_identifiers ~ in ~ dotted_name }
+for_loop_block_no_if = { node_block ~ for ~ dotted_identifiers ~ in ~ dotted_name }
 
 override_param = { NUMBER | BOOL }
 
 // Condition definitions
-condition_def = { (dotted_identifiers | all_identifier) ~ DEFINED_BY ~ condition_section }
+condition_def = { dotted_identifiers ~ DEFINED_BY ~ condition_section }
 condition_section = { condition_stmt ~ QUESTION ~ condition_node_stmt ~ COLON ~ condition_node_stmt }
-condition_node_stmt = { condition_section | condition_node }
-condition_node = { node_func_block }
+condition_node_stmt = { condition_section | node_block }
 
 condition_stmt = {
     comparison_stmt |
     LPAREN ~ comparison_stmt ~ RPAREN |
-    condition_custom_stmt |
+    node_block |
     if_condition
 }
-
-condition_custom_stmt = { node_func_block }
 
 comparison_stmt = {
     comparison_gt | comparison_ge | comparison_lt |
@@ -264,33 +247,24 @@ comparison_lt = { operand2 ~ OP_LT ~ operand2 }
 comparison_le = { operand2 ~ OP_LE ~ operand2 }
 comparison_eq = { operand3 ~ OP_EQ ~ operand3 }
 comparison_ne = { operand3 ~ OP_NE ~ operand3 }
-comparison_match = { operand_input ~ OP_MATCH ~ ONE_LINE_STRING }
+comparison_match = { all_identifier ~ OP_MATCH ~ STRING }
 
-operand2 = { operand_num | operand_input }
-operand3 = { operand_num | operand_str | operand_input }
-operand_num = { NUMBER }
-operand_str = { ONE_LINE_STRING }
-operand_input = { all_identifier }
-
-// Edge (not supported)
-edge_def = { edge }
+operand2 = { NUMBER | all_identifier }
+operand3 = { NUMBER | STRING | all_identifier }
 
 // Op definitions
-ops = { op_def_end+ }
-op_def_end = { op_def ~ ENDMARKER? }
 op_def = { op ~ LBRACE ~ op_block ~ RBRACE ~ (as_keyword ~ as_stmt)? }
 
 op_block = { op_stmt* }
 op_stmt = { op_sections }
 
-op_sections = { op_section_end+ }
-op_section_end = { (op_section | COMMENT) ~ ENDMARKER? }
+op_sections = { op_section_comment+ }
+op_section_comment = { op_section ~ ENDMARKER? | COMMENT }
 op_section = { op_meta_def | op_input_def | op_output_def | op_config_def | sub_graph_def }
 
 op_meta_def = { meta ~ LBRACE ~ op_meta_block ~ RBRACE }
-op_meta_block = { op_meta_stmt_end* }
-op_meta_stmt_end = { (op_meta_stmt | COMMENT) ~ ENDMARKER? }
-op_meta_stmt = { attr_def | ref_def | version_def }
+op_meta_block = { op_meta_stmt_comment* }
+op_meta_stmt_comment = { param_def ~ ENDMARKER? | COMMENT }
 
 op_input_def = { input ~ LBRACE ~ op_spec_stmts ~ RBRACE }
 op_output_def = { output ~ LBRACE ~ op_spec_stmts ~ RBRACE }
@@ -313,13 +287,13 @@ op_spec_dtype_def_dict = { dtype ~ DEFINED_BY ~ (all_identifier | date) }
 op_spec_default_def = { default_def | default_ref_def }
 default_def = { default ~ DEFINED_BY ~ value }
 default_ref_def = { default ~ DEFINED_BY ~ dotted_name }
-op_spec_pattern_def = { pattern ~ DEFINED_BY ~ ONE_LINE_STRING }
-op_spec_help_def = { help ~ DEFINED_BY ~ ONE_LINE_STRING }
+op_spec_pattern_def = { pattern ~ DEFINED_BY ~ STRING }
+op_spec_help_def = { help ~ DEFINED_BY ~ STRING }
 op_spec_choice_def = { choice ~ DEFINED_BY ~ tuple_stmt }
 op_spec_length_def = { length ~ DEFINED_BY ~ (fix_length | closed_interval) }
 op_spec_range_def = { range ~ DEFINED_BY ~ mix_interval }
-op_spec_url_def = { url ~ DEFINED_BY ~ ONE_LINE_STRING }
-op_spec_fname_def = { fname ~ DEFINED_BY ~ ONE_LINE_STRING }
+op_spec_url_def = { url ~ DEFINED_BY ~ STRING }
+op_spec_fname_def = { fname ~ DEFINED_BY ~ STRING }
 
 fix_length = { NUMBER }
 closed_interval = {
@@ -337,22 +311,15 @@ right_interval = { RBRACKET | RPAREN }
 
 sub_graph_def = { graph_def }
 
-// Nodes (standalone)
-nodes = { node_end+ }
-node_end = { node_func_def ~ ENDMARKER? }
-
-// Version definition
-version_def = { version ~ DEFINED_BY ~ ONE_LINE_STRING }
-
 // Values
 value = {
-    MULTI_LINE_STRING | ONE_LINE_STRING | FLOAT | BOOL | DATETIME |
+    MULTI_LINE_STRING | STRING | FLOAT | BOOL | DATETIME |
     NUMBER | NULL | date_stmt | dict_stmt | list_stmt | tuple_stmt | set_stmt
 }
 
 dict_stmt = { LBRACE ~ dict_block ~ RBRACE }
 dict_block = { (key_value ~ (COMMA ~ key_value)* ~ COMMA?)? }
-key_value = { ONE_LINE_STRING ~ COLON ~ value }
+key_value = { STRING ~ COLON ~ value }
 
 list_stmt = { LBRACKET ~ list_block ~ RBRACKET }
 list_block = { (value ~ (COMMA ~ value)* ~ COMMA?)? }
@@ -363,11 +330,11 @@ tuple_block = { (value ~ (COMMA ~ value)* ~ COMMA?)? }
 set_stmt = { LBRACE ~ set_block ~ RBRACE }
 set_block = { (value ~ (COMMA ~ value)+ ~ COMMA?) | (value ~ COMMA) }
 
-date_stmt = { date ~ LPAREN ~ ONE_LINE_STRING ~ RPAREN }
+date_stmt = { date ~ LPAREN ~ STRING ~ RPAREN }
 
 keywords = {
     graph | op | node | edge | var | meta | import | as_keyword | from | ref | for | in | if_keyword | or | else_keyword |
-    input | output | depend | version | with | start | end | date | config | name | dtype | default |
+    input | output | depend | version | with | date | config | name | dtype | default |
     pattern | help | choice | length | range | condition | property | url | fname | null | comment |
     override | log | metrics | funnel
 }

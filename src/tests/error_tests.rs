@@ -1,17 +1,17 @@
 //! Error handling tests
-//! 
+//!
 //! Tests for various error conditions including syntax errors, semantic errors,
 //! deprecated features, and unsupported features.
-#![allow(unused_imports)] 
+#![allow(unused_imports)]
 use crate::ast::*;
-use crate::tests::*;
 use crate::error::ParseError;
+use crate::tests::*;
 
 #[cfg(test)]
 mod syntax_error_tests {
     use crate::ast::*;
-    use crate::tests::*;
     use crate::error::ParseError;
+    use crate::tests::*;
 
     #[test]
     fn test_unclosed_brace() {
@@ -19,26 +19,19 @@ mod syntax_error_tests {
 var {
     name = "test";
     value = 42;
-# Missing closing brace
 "#;
         let error = assert_parse_error(content);
         match error {
-            ParseError::Pest(_) | ParseError::SyntaxError { .. } => {
-                // Expected syntax error
+            ParseError::SyntaxError {
+                line,
+                column,
+                message,
+            } => {
+                assert_eq!(line, 5);
+                assert_eq!(column, 1);
+                assert!(message.contains("parsing error: expected"));
             }
             _ => panic!("Expected syntax error for unclosed brace"),
-        }
-    }
-
-    #[test]
-    fn test_missing_semicolon() {
-        let content = r#"import foo"#; // Missing semicolon
-        let error = assert_parse_error(content);
-        match error {
-            ParseError::Pest(_) | ParseError::SyntaxError { .. } => {
-                // Expected syntax error
-            }
-            _ => panic!("Expected syntax error for missing semicolon"),
         }
     }
 
@@ -51,8 +44,14 @@ var {
 "#;
         let error = assert_parse_error(content);
         match error {
-            ParseError::Pest(_) | ParseError::SyntaxError { .. } => {
-                // Expected syntax error
+            ParseError::SyntaxError {
+                line,
+                column,
+                message,
+            } => {
+                assert_eq!(line, 3);
+                assert_eq!(column, 5);
+                assert!(message.contains("parsing error: expected"));
             }
             _ => panic!("Expected syntax error for invalid variable syntax"),
         }
@@ -67,8 +66,14 @@ var {
 "#;
         let error = assert_parse_error(content);
         match error {
-            ParseError::Pest(_) | ParseError::SyntaxError { .. } => {
-                // Expected syntax error
+            ParseError::SyntaxError {
+                line,
+                column,
+                message,
+            } => {
+                assert_eq!(line, 3);
+                assert_eq!(column, 12);
+                assert!(message.contains("parsing error: expected"));
             }
             _ => panic!("Expected syntax error for unterminated string"),
         }
@@ -82,9 +87,16 @@ var {
 }
 "#;
         let error = assert_parse_error(content);
+        println!("{:?}", error);
         match error {
-            ParseError::Pest(_) | ParseError::SyntaxError { .. } => {
-                // Expected syntax error
+            ParseError::SyntaxError {
+                line,
+                column,
+                message,
+            } => {
+                assert_eq!(line, 3);
+                assert_eq!(column, 24);
+                assert!(message.contains("parsing error: expected"));
             }
             _ => panic!("Expected syntax error for invalid number format"),
         }
@@ -177,8 +189,8 @@ mod unsupported_feature_tests {
 #[cfg(test)]
 mod lexical_error_tests {
     use crate::ast::*;
-    use crate::tests::*;
     use crate::error::ParseError;
+    use crate::tests::*;
 
     #[test]
     fn test_invalid_character() {
@@ -333,7 +345,7 @@ var {{
 "#,
             very_long_name
         );
-        
+
         // Should handle long identifiers gracefully
         let result = parse_test_gos(&content);
         match result {
@@ -349,7 +361,7 @@ var {{
     #[test]
     fn test_deeply_nested_structures() {
         let mut content = String::from("var { nested = ");
-        
+
         // Create deeply nested dictionary
         for _ in 0..50 {
             content.push_str(r#"{"level": "#);
@@ -359,7 +371,7 @@ var {{
             content.push('}');
         }
         content.push_str("; }");
-        
+
         let result = parse_test_gos(&content);
         match result {
             Ok(_) => {

@@ -747,17 +747,17 @@ mod comments_tests {
 
     #[test]
     fn test_comments() {
-        let content = r#"
-        # Single line comment
-        var {
-            name = "test"; # Inline comment
-        };
+        // let content = r#"
+        // # Single line comment
+        // var {
+        //     name = "test"; # Inline comment
+        // };
         
-        """
-        Multi-line comment
-        spanning multiple lines
-        """
-        "#;
+        // """
+        // Multi-line comment
+        // spanning multiple lines
+        // """
+        // "#;
 
         // let result = parse(content);
         // assert!(result.is_ok(), "Failed to parse comments: {:?}", result);
