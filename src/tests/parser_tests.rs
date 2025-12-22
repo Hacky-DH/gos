@@ -32,7 +32,11 @@ pub mod assert_ast {
     }
 
     /// 辅助函数：断言字符串字面量属性值
-    pub fn assert_string_value(value: Box<AstNodeEnum>, expected_pos: &Position, expected_value: &str) {
+    pub fn assert_string_value(
+        value: Box<AstNodeEnum>,
+        expected_pos: &Position,
+        expected_value: &str,
+    ) {
         match &*value {
             AstNodeEnum::StringLiteral(string_lit) => {
                 assert_eq!(string_lit.position, *expected_pos);
@@ -123,11 +127,10 @@ pub mod assert_ast {
     }
 }
 
-
 #[cfg(test)]
 mod value_tests {
-    use crate::ast::*;
     use super::assert_ast::*;
+    use crate::ast::*;
     use crate::tests::*;
 
     #[test]
@@ -155,22 +158,34 @@ var {
                         match &var_def.children[0] {
                             AstNodeEnum::AttrDef(attr_def) => {
                                 pos.set(3, 3, 20, 42);
-                                assert_string_value(attr_def.value.clone(), &pos, "single quoted string");
-                            },
+                                assert_string_value(
+                                    attr_def.value.clone(),
+                                    &pos,
+                                    "single quoted string",
+                                );
+                            }
                             _ => panic!("Expected AttrDef"),
                         }
                         match &var_def.children[1] {
                             AstNodeEnum::AttrDef(attr_def) => {
                                 pos.set(4, 4, 20, 42);
-                                assert_string_value(attr_def.value.clone(), &pos, "double quoted string");
-                            },
+                                assert_string_value(
+                                    attr_def.value.clone(),
+                                    &pos,
+                                    "double quoted string",
+                                );
+                            }
                             _ => panic!("Expected AttrDef"),
                         }
                         match &var_def.children[2] {
                             AstNodeEnum::AttrDef(attr_def) => {
                                 pos.set(5, 8, 17, 8);
-                                assert_string_value(attr_def.value.clone(), &pos, "\n    This is a multiline\n    string with newlines\n    ");
-                            },
+                                assert_string_value(
+                                    attr_def.value.clone(),
+                                    &pos,
+                                    "\n    This is a multiline\n    string with newlines\n    ",
+                                );
+                            }
                             _ => panic!("Expected AttrDef"),
                         }
                     }
@@ -203,7 +218,7 @@ var {
                     let mut pos = Position::new_all(2, 12, 1, 2);
                     assert_eq!(var_def.position, pos);
                     assert_eq!(var_def.children.len(), 2);
-                    
+
                     // 测试第一个属性：list_val = [89, -123, 3.14, -2.71, 1.23e-4, 0.0]
                     match &var_def.children[0] {
                         AstNodeEnum::AttrDef(attr_def) => {
@@ -218,24 +233,54 @@ var {
                                     assert_eq!(list_stmt.items.len(), 6);
                                     // 验证列表中的各个元素
                                     pos.set(3, 3, 17, 19);
-                                    assert_number_value(Box::new(list_stmt.items[0].clone()), &pos, "89", 89);
+                                    assert_number_value(
+                                        Box::new(list_stmt.items[0].clone()),
+                                        &pos,
+                                        "89",
+                                        89,
+                                    );
                                     pos.set(3, 3, 21, 25);
-                                    assert_number_value(Box::new(list_stmt.items[1].clone()), &pos, "-123", -123);
+                                    assert_number_value(
+                                        Box::new(list_stmt.items[1].clone()),
+                                        &pos,
+                                        "-123",
+                                        -123,
+                                    );
                                     pos.set(3, 3, 27, 31);
-                                    assert_float_value(Box::new(list_stmt.items[2].clone()), &pos, "3.14", 3.14);
+                                    assert_float_value(
+                                        Box::new(list_stmt.items[2].clone()),
+                                        &pos,
+                                        "3.14",
+                                        3.14,
+                                    );
                                     pos.set(3, 3, 33, 38);
-                                    assert_float_value(Box::new(list_stmt.items[3].clone()), &pos, "-2.71", -2.71);
+                                    assert_float_value(
+                                        Box::new(list_stmt.items[3].clone()),
+                                        &pos,
+                                        "-2.71",
+                                        -2.71,
+                                    );
                                     pos.set(3, 3, 40, 47);
-                                    assert_float_value(Box::new(list_stmt.items[4].clone()), &pos, "1.23e-4", 0.000123);
+                                    assert_float_value(
+                                        Box::new(list_stmt.items[4].clone()),
+                                        &pos,
+                                        "1.23e-4",
+                                        0.000123,
+                                    );
                                     pos.set(3, 3, 49, 52);
-                                    assert_float_value(Box::new(list_stmt.items[5].clone()), &pos, "0.0", 0.0);
-                                },
+                                    assert_float_value(
+                                        Box::new(list_stmt.items[5].clone()),
+                                        &pos,
+                                        "0.0",
+                                        0.0,
+                                    );
+                                }
                                 _ => panic!("Expected ListStatement"),
                             }
-                        },
+                        }
                         _ => panic!("Expected AttrDef"),
                     }
-                    
+
                     // 测试第二个属性：dict_val = {...}
                     match &var_def.children[1] {
                         AstNodeEnum::AttrDef(attr_def) => {
@@ -243,63 +288,91 @@ var {
                             assert_eq!(attr_def.position, pos);
                             pos.set(4, 4, 5, 13);
                             assert_symbol(&attr_def.name, &pos, "dict_val", SymbolKind::VarAttr);
-                            
+
                             // 验证字典内容
                             match &*attr_def.value {
                                 AstNodeEnum::DictStatement(dict_stmt) => {
                                     pos.set(4, 11, 16, 6);
                                     assert_eq!(dict_stmt.position, pos);
                                     assert_eq!(dict_stmt.items.len(), 4);
-                                    
+
                                     // 测试第一个字典项："tuple_val": (1, "two", date("2025-01-01"))
                                     let dict_item = &dict_stmt.items[0];
                                     pos.set(5, 5, 9, 52);
                                     assert_eq!(dict_item.position, pos);
-                                    
+
                                     // 验证键
                                     pos.set(5, 5, 9, 20);
                                     assert_string_value(dict_item.key.clone(), &pos, "tuple_val");
-                                    
+
                                     // 验证值（元组）
                                     match &*dict_item.value {
                                         AstNodeEnum::TupleStatement(tuple_stmt) => {
                                             pos.set(5, 5, 22, 52);
                                             assert_eq!(tuple_stmt.position, pos);
                                             assert_eq!(tuple_stmt.items.len(), 3);
-                                            
+
                                             pos.set(5, 5, 23, 24);
-                                            assert_number_value(Box::new(tuple_stmt.items[0].clone()), &pos, "1", 1);
+                                            assert_number_value(
+                                                Box::new(tuple_stmt.items[0].clone()),
+                                                &pos,
+                                                "1",
+                                                1,
+                                            );
                                             pos.set(5, 5, 26, 31);
-                                            assert_string_value(Box::new(tuple_stmt.items[1].clone()), &pos, "two");
+                                            assert_string_value(
+                                                Box::new(tuple_stmt.items[1].clone()),
+                                                &pos,
+                                                "two",
+                                            );
                                             pos.set(5, 5, 33, 51);
-                                            assert_date_value(Box::new(tuple_stmt.items[2].clone()), &pos, "2025-01-01");
-                                        },
+                                            assert_date_value(
+                                                Box::new(tuple_stmt.items[2].clone()),
+                                                &pos,
+                                                "2025-01-01",
+                                            );
+                                        }
                                         _ => panic!("Expected TupleStatement"),
                                     }
-                                    
+
                                     // 测试第二个字典项："set_val": {1,2,3}
                                     let dict_item = &dict_stmt.items[1];
                                     pos.set(6, 6, 9, 27);
                                     assert_eq!(dict_item.position, pos);
                                     pos.set(6, 6, 9, 18);
                                     assert_string_value(dict_item.key.clone(), &pos, "set_val");
-                                    
+
                                     match &*dict_item.value {
                                         AstNodeEnum::SetStatement(set_stmt) => {
                                             pos.set(6, 6, 20, 27);
                                             assert_eq!(set_stmt.position, pos);
                                             assert_eq!(set_stmt.items.len(), 3);
-                                            
+
                                             pos.set(6, 6, 21, 22);
-                                            assert_number_value(Box::new(set_stmt.items[0].clone()), &pos, "1", 1);
+                                            assert_number_value(
+                                                Box::new(set_stmt.items[0].clone()),
+                                                &pos,
+                                                "1",
+                                                1,
+                                            );
                                             pos.set(6, 6, 23, 24);
-                                            assert_number_value(Box::new(set_stmt.items[1].clone()), &pos, "2", 2);
+                                            assert_number_value(
+                                                Box::new(set_stmt.items[1].clone()),
+                                                &pos,
+                                                "2",
+                                                2,
+                                            );
                                             pos.set(6, 6, 25, 26);
-                                            assert_number_value(Box::new(set_stmt.items[2].clone()), &pos, "3", 3);
-                                        },
+                                            assert_number_value(
+                                                Box::new(set_stmt.items[2].clone()),
+                                                &pos,
+                                                "3",
+                                                3,
+                                            );
+                                        }
                                         _ => panic!("Expected SetStatement"),
                                     }
-                                    
+
                                     // 测试第三个字典项："string_val": "test string"
                                     let dict_item = &dict_stmt.items[2];
                                     pos.set(7, 7, 9, 36);
@@ -307,81 +380,110 @@ var {
                                     pos.set(7, 7, 9, 21);
                                     assert_string_value(dict_item.key.clone(), &pos, "string_val");
                                     pos.set(7, 7, 23, 36);
-                                    assert_string_value(dict_item.value.clone(), &pos, "test string");
-                                    
+                                    assert_string_value(
+                                        dict_item.value.clone(),
+                                        &pos,
+                                        "test string",
+                                    );
+
                                     // 测试第四个字典项："nest": [{"true_val": true}, {"false_val": false}, {"null_val": null}]
                                     let dict_item = &dict_stmt.items[3];
                                     pos.set(8, 10, 9, 32);
                                     assert_eq!(dict_item.position, pos);
                                     pos.set(8, 8, 9, 15);
                                     assert_string_value(dict_item.key.clone(), &pos, "nest");
-                                    
+
                                     match &*dict_item.value {
                                         AstNodeEnum::ListStatement(nest_list) => {
                                             pos.set(8, 10, 17, 32);
                                             assert_eq!(nest_list.position, pos);
                                             assert_eq!(nest_list.items.len(), 3);
-                                            
+
                                             // 测试嵌套列表中的第一个字典
                                             match &nest_list.items[0] {
                                                 AstNodeEnum::DictStatement(nest_dict1) => {
                                                     pos.set(8, 8, 18, 36);
                                                     assert_eq!(nest_dict1.position, pos);
                                                     assert_eq!(nest_dict1.items.len(), 1);
-                                                    
+
                                                     let nest_item1 = &nest_dict1.items[0];
                                                     pos.set(8, 8, 19, 35);
                                                     assert_eq!(nest_item1.position, pos);
                                                     pos.set(8, 8, 19, 29);
-                                                    assert_string_value(nest_item1.key.clone(), &pos, "true_val");
+                                                    assert_string_value(
+                                                        nest_item1.key.clone(),
+                                                        &pos,
+                                                        "true_val",
+                                                    );
                                                     pos.set(8, 8, 31, 35);
-                                                    assert_bool_value(nest_item1.value.clone(), &pos, "true", true);
-                                                },
+                                                    assert_bool_value(
+                                                        nest_item1.value.clone(),
+                                                        &pos,
+                                                        "true",
+                                                        true,
+                                                    );
+                                                }
                                                 _ => panic!("Expected DictStatement"),
                                             }
-                                            
+
                                             // 测试嵌套列表中的第二个字典
                                             match &nest_list.items[1] {
                                                 AstNodeEnum::DictStatement(nest_dict2) => {
                                                     pos.set(9, 9, 13, 33);
                                                     assert_eq!(nest_dict2.position, pos);
                                                     assert_eq!(nest_dict2.items.len(), 1);
-                                                    
+
                                                     let nest_item2 = &nest_dict2.items[0];
                                                     pos.set(9, 9, 14, 32);
                                                     assert_eq!(nest_item2.position, pos);
                                                     pos.set(9, 9, 14, 25);
-                                                    assert_string_value(nest_item2.key.clone(), &pos, "false_val");
+                                                    assert_string_value(
+                                                        nest_item2.key.clone(),
+                                                        &pos,
+                                                        "false_val",
+                                                    );
                                                     pos.set(9, 9, 27, 32);
-                                                    assert_bool_value(nest_item2.value.clone(), &pos, "false", false);
-                                                },
+                                                    assert_bool_value(
+                                                        nest_item2.value.clone(),
+                                                        &pos,
+                                                        "false",
+                                                        false,
+                                                    );
+                                                }
                                                 _ => panic!("Expected DictStatement"),
                                             }
-                                            
+
                                             // 测试嵌套列表中的第三个字典
                                             match &nest_list.items[2] {
                                                 AstNodeEnum::DictStatement(nest_dict3) => {
                                                     pos.set(10, 10, 13, 31);
                                                     assert_eq!(nest_dict3.position, pos);
                                                     assert_eq!(nest_dict3.items.len(), 1);
-                                                    
+
                                                     let nest_item3 = &nest_dict3.items[0];
                                                     pos.set(10, 10, 14, 30);
                                                     assert_eq!(nest_item3.position, pos);
                                                     pos.set(10, 10, 14, 24);
-                                                    assert_string_value(nest_item3.key.clone(), &pos, "null_val");
+                                                    assert_string_value(
+                                                        nest_item3.key.clone(),
+                                                        &pos,
+                                                        "null_val",
+                                                    );
                                                     pos.set(10, 10, 26, 30);
-                                                    assert_null_value(nest_item3.value.clone(), &pos);
-                                                },
+                                                    assert_null_value(
+                                                        nest_item3.value.clone(),
+                                                        &pos,
+                                                    );
+                                                }
                                                 _ => panic!("Expected DictStatement"),
                                             }
-                                        },
+                                        }
                                         _ => panic!("Expected ListStatement"),
                                     }
-                                },
+                                }
                                 _ => panic!("Expected DictStatement"),
                             }
-                        },
+                        }
                         _ => panic!("Expected AttrDef"),
                     }
                 }
@@ -394,10 +496,11 @@ var {
 
 #[cfg(test)]
 mod variable_tests {
+    use chrono::SecondsFormat;
+
+    use super::assert_ast::*;
     use crate::ast::*;
     use crate::tests::*;
-    use super::assert_ast::*;
-    // TODO 增加多个var和注释的测试， 空var  加if else
 
     #[test]
     fn test_parse_simple_var_definition() {
@@ -474,6 +577,146 @@ var {
                 AstNodeEnum::VarDef(var_def) => {
                     assert!(var_def.alias.is_none());
                     assert_eq!(var_def.children.len(), 2);
+                }
+                _ => panic!("Expected VarDef node"),
+            },
+            _ => panic!("Expected Module node"),
+        }
+    }
+
+    #[test]
+    fn test_multi_var_definition() {
+        let content = r#"
+var {
+    name = "first";
+} as config;
+
+var {
+    name = "second";  
+} as config;
+"#;
+        let ast = assert_parse_success(content);
+        match ast {
+            AstNodeEnum::Module(module) => {
+                assert_eq!(module.children.len(), 2);
+                match &module.children[0] {
+                    AstNodeEnum::VarDef(var_def) => {
+                        assert_eq!(var_def.children.len(), 1);
+                    }
+                    _ => panic!("Expected VarDef node"),
+                }
+                match &module.children[1] {
+                    AstNodeEnum::VarDef(var_def) => {
+                        assert_eq!(var_def.children.len(), 1);
+                    }
+                    _ => panic!("Expected VarDef node"),
+                }
+            }
+            _ => panic!("Expected Module node"),
+        }
+    }
+
+    #[test]
+    fn test_var_with_comment() {
+        let content = r#"
+# first comment
+var { # second comment
+    name = "test"; # in line comment
+    value = 42;
+    # one line comment
+} as config; # end var comment
+# end line comment
+"#;
+        let ast = assert_parse_success(content);
+
+        match ast {
+            AstNodeEnum::Module(module) => {
+                assert_eq!(module.children.len(), 4);
+                if let AstNodeEnum::Comment(commnt) = &module.children[0] {
+                    assert_eq!(commnt.value, "# first comment");
+                }
+                if let AstNodeEnum::VarDef(var_def) = &module.children[1] {
+                    assert_eq!(var_def.children.len(), 5);
+                    if let AstNodeEnum::Comment(commnt) = &var_def.children[0] {
+                        assert_eq!(commnt.value, "# second comment");
+                    }
+                    if let AstNodeEnum::Comment(commnt) = &var_def.children[2] {
+                        assert_eq!(commnt.value, "# in line comment");
+                    }
+                    if let AstNodeEnum::Comment(commnt) = &var_def.children[4] {
+                        assert_eq!(commnt.value, "# one line comment");
+                    }
+                }
+                if let AstNodeEnum::Comment(commnt) = &module.children[2] {
+                    assert_eq!(commnt.value, "# end var comment");
+                }
+                if let AstNodeEnum::Comment(commnt) = &module.children[3] {
+                    assert_eq!(commnt.value, "# end line comment");
+                }
+            }
+            _ => panic!("Expected Module node"),
+        }
+    }
+
+    #[test]
+    fn test_empty_var() {
+        let content = r#" var {};"#;
+        let ast = assert_parse_success(content);
+
+        match ast {
+            AstNodeEnum::Module(module) => match &module.children[0] {
+                AstNodeEnum::VarDef(var_def) => {
+                    assert_eq!(var_def.children.len(), 0);
+                }
+                _ => panic!("Expected VarDef node"),
+            },
+            _ => panic!("Expected Module node"),
+        }
+    }
+
+    #[test]
+    fn test_parse_with_if() {
+        let content = r#"
+var {
+    name = "test" if "a>2";
+    value = 42 if "b.empty()" else 52;
+};
+"#;
+        let ast = assert_parse_success(content);
+
+        match ast {
+            AstNodeEnum::Module(module) => match &module.children[0] {
+                AstNodeEnum::VarDef(var_def) => {
+                    assert_eq!(var_def.children.len(), 2);
+                    if let AstNodeEnum::AttrDef(attr_def) = &var_def.children[0] {
+                        assert!(attr_def.condition.is_some());
+                        assert!(attr_def.else_value.is_none());
+                        if let Some(AstNodeEnum::StringLiteral(string_literal)) =
+                            attr_def.condition.as_deref()
+                        {
+                            assert_eq!(string_literal.value, "a>2");
+                        } else {
+                            panic!("Expected condition StringLiteral");
+                        }
+                    }
+                    if let AstNodeEnum::AttrDef(attr_def) = &var_def.children[1] {
+                        assert!(attr_def.condition.is_some());
+                        assert!(attr_def.else_value.is_some());
+                        if let Some(AstNodeEnum::StringLiteral(string_literal)) =
+                            attr_def.condition.as_deref()
+                        {
+                            assert_eq!(string_literal.value, "b.empty()");
+                        } else {
+                            panic!("Expected condition StringLiteral");
+                        }
+                        if let Some(AstNodeEnum::NumberLiteral(num_literal)) =
+                            attr_def.else_value.as_deref()
+                        {
+                            assert_eq!(num_literal.value, 52);
+                        } else {
+                            panic!("Expected else_value NumberLiteral");
+                        }
+                    }
                 }
                 _ => panic!("Expected VarDef node"),
             },
@@ -752,7 +995,7 @@ mod comments_tests {
         // var {
         //     name = "test"; # Inline comment
         // };
-        
+
         // """
         // Multi-line comment
         // spanning multiple lines

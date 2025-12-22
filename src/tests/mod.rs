@@ -19,7 +19,7 @@ pub fn default_test_options() -> ParseOptions {
         symbol: true,
         error: true,
         tracking: true,
-        debug: false,
+        debug: true,
     }
 }
 

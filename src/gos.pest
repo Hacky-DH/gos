@@ -123,10 +123,7 @@ gos = { SOI ~ statements? ~ EOI }
 
 statements = { statement_def+ }
 
-statement_def = {
-    statement_end |
-    COMMENT
-}
+statement_def = { statement_end | COMMENT }
 
 statement_end = { all_statements ~ ENDMARKER? }
 
@@ -159,16 +156,16 @@ graph_def = { graph_template ~ LBRACE ~ graph_block ~ RBRACE ~ (as_keyword ~ as_
 graph_template = { graph ~ (COLON ~ as_stmt)? }
 as_stmt = { dotted_name ~ (LPAREN ~ STRING ~ RPAREN)? }
 
-graph_block = { graph_stmt_comment* }
-graph_stmt_comment = { graph_stmt ~ ENDMARKER? | COMMENT }
+graph_block = { graph_stmt* }
+graph_stmt = { dotted_identifiers ~ DEFINED_BY ~ graph_value ~ ENDMARKER? | COMMENT }
 
-graph_stmt = {
-    graph_prop_def |
-    condition_def |
-    node_def
+graph_value = {
+    condition_section |
+    node_block |
+    value |
+    dotted_identifiers |
+    for_loop_block
 }
-
-graph_prop_def = { all_identifier ~ DEFINED_BY ~ (value | dotted_identifiers) }
 
 dotted_identifiers = { dotted_name ~ (COMMA ~ dotted_name)* }
 
@@ -225,15 +222,14 @@ for_loop_block_no_if = { node_block ~ for ~ dotted_identifiers ~ in ~ dotted_nam
 override_param = { NUMBER | BOOL }
 
 // Condition definitions
-condition_def = { dotted_identifiers ~ DEFINED_BY ~ condition_section }
 condition_section = { condition_stmt ~ QUESTION ~ condition_node_stmt ~ COLON ~ condition_node_stmt }
 condition_node_stmt = { condition_section | node_block }
 
 condition_stmt = {
+    if_condition |
     comparison_stmt |
     LPAREN ~ comparison_stmt ~ RPAREN |
-    node_block |
-    if_condition
+    node_block
 }
 
 comparison_stmt = {

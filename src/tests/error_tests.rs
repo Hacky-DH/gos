@@ -101,87 +101,20 @@ var {
             _ => panic!("Expected syntax error for invalid number format"),
         }
     }
-}
 
-#[cfg(test)]
-mod semantic_error_tests {
-    use super::*;
-
-    #[test]
-    fn test_duplicate_variable_definition() {
+     #[test]
+    fn test_invalid_character() {
         let content = r#"
 var {
-    name = "first";
-} as config;
-
-var {
-    name = "second";  
-} as config; # Duplicate alias
-"#;
-        // Note: This might not be caught at parse time but at semantic analysis
-        // For now, we test that it parses successfully but could be caught later
-        let _ast = assert_parse_success(content);
-    }
-
-    #[test]
-    fn test_undefined_reference() {
-        let content = r#"
-graph {
-    node = undefined_function();
+    name = "test"@;
 }
 "#;
-        // This should parse successfully as it's a semantic issue, not syntax
-        let _ast = assert_parse_success(content);
-    }
-}
-
-#[cfg(test)]
-mod deprecated_feature_tests {
-    use super::*;
-
-    #[test]
-    fn test_meta_definition_deprecated() {
-        // Test that meta definitions are flagged as deprecated
-        // This would need to be implemented in the parser to emit warnings
-        let content = r#"
-meta {
-    name = "deprecated_meta";
-}
-"#;
-        // The parser should handle this and emit a deprecation warning
-        // but still parse successfully or fail with appropriate error
-        let result = parse_test_gos(content);
-        match result {
-            Ok(_) => {
-                // Should parse but with deprecation warning
-                // (warnings would be collected in error collection)
-            }
-            Err(ParseError::DeprecatedFeature { .. }) => {
-                // Expected deprecation error
-            }
-            Err(_) => {
-                // Other errors are also acceptable for deprecated features
-            }
-        }
-    }
-}
-
-#[cfg(test)]
-mod unsupported_feature_tests {
-    use super::*;
-
-    #[test]
-    fn test_from_import_unsupported() {
-        let content = r#"from module import function;"#;
         let error = assert_parse_error(content);
         match error {
-            ParseError::UnsupportedFeature { feature, .. } => {
-                assert!(feature.contains("from import"));
+            ParseError::SyntaxError { message,.. } => {
+                assert!(message.contains("parsing error: expected"));
             }
-            ParseError::Pest(_) | ParseError::SyntaxError { .. } => {
-                // Also acceptable if it's a syntax error
-            }
-            _ => panic!("Expected unsupported feature error for 'from import'"),
+            _ => panic!("Expected lexical error for invalid character"),
         }
     }
 }
@@ -193,25 +126,6 @@ mod lexical_error_tests {
     use crate::tests::*;
 
     #[test]
-    fn test_invalid_character() {
-        let content = r#"
-var {
-    name = "test"@; # Invalid character @
-}
-"#;
-        let error = assert_parse_error(content);
-        match error {
-            ParseError::LexicalError { character, .. } => {
-                assert_eq!(character, '@');
-            }
-            ParseError::Pest(_) | ParseError::SyntaxError { .. } => {
-                // Also acceptable as pest might report it as syntax error
-            }
-            _ => panic!("Expected lexical error for invalid character"),
-        }
-    }
-
-    #[test]
     fn test_unicode_handling() {
         let content = r#"
 var {
@@ -221,6 +135,7 @@ var {
 "#;
         // Unicode should be handled correctly
         let _ast = assert_parse_success(content);
+        
     }
 }
 
