@@ -403,8 +403,6 @@ impl GosParserImpl {
             }
         }
 
-        eprintln!("DEBUG: GraphDef created with {} children", children.len());
-
         Ok(AstNodeEnum::GraphDef(GraphDef {
             position,
             children,

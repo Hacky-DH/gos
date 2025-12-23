@@ -632,26 +632,26 @@ var { # second comment
         match ast {
             AstNodeEnum::Module(module) => {
                 assert_eq!(module.children.len(), 4);
-                if let AstNodeEnum::Comment(commnt) = &module.children[0] {
-                    assert_eq!(commnt.value, "// first comment");
+                if let AstNodeEnum::Comment(comment) = &module.children[0] {
+                    assert_eq!(comment.value, "// first comment");
                 }
                 if let AstNodeEnum::VarDef(var_def) = &module.children[1] {
                     assert_eq!(var_def.children.len(), 5);
-                    if let AstNodeEnum::Comment(commnt) = &var_def.children[0] {
-                        assert_eq!(commnt.value, "# second comment");
+                    if let AstNodeEnum::Comment(comment) = &var_def.children[0] {
+                        assert_eq!(comment.value, "# second comment");
                     }
-                    if let AstNodeEnum::Comment(commnt) = &var_def.children[2] {
-                        assert_eq!(commnt.value, "# in line comment");
+                    if let AstNodeEnum::Comment(comment) = &var_def.children[2] {
+                        assert_eq!(comment.value, "# in line comment");
                     }
-                    if let AstNodeEnum::Comment(commnt) = &var_def.children[4] {
-                        assert_eq!(commnt.value, "# one line comment");
+                    if let AstNodeEnum::Comment(comment) = &var_def.children[4] {
+                        assert_eq!(comment.value, "# one line comment");
                     }
                 }
-                if let AstNodeEnum::Comment(commnt) = &module.children[2] {
-                    assert_eq!(commnt.value, "/* end var comment */");
+                if let AstNodeEnum::Comment(comment) = &module.children[2] {
+                    assert_eq!(comment.value, "/* end var comment */");
                 }
-                if let AstNodeEnum::Comment(commnt) = &module.children[3] {
-                    assert_eq!(commnt.value, "# end line comment");
+                if let AstNodeEnum::Comment(comment) = &module.children[3] {
+                    assert_eq!(comment.value, "# end line comment");
                 }
             }
             _ => panic!("Expected Module"),
@@ -819,9 +819,10 @@ mod import_tests {
 
 #[cfg(test)]
 mod graph_tests {
+    use super::assert_ast::*;
     use crate::ast::*;
     use crate::tests::*;
-    // TODO 测试 图模板  
+    // TODO 测试 图模板
 
     #[test]
     fn test_parse_simple_graph() {
@@ -834,24 +835,66 @@ graph { # graph start
         let ast = assert_parse_success(content);
 
         match ast {
-            // TODO 测试position
             AstNodeEnum::Module(module) => {
+                let mut pos = Position::new_all(1, 5, 2, 15);
+                assert_eq!(module.position, pos);
                 assert_eq!(module.children.len(), 3);
-                if let AstNodeEnum::Comment(commnt) = &module.children[0] {
-                    assert_eq!(commnt.value, "# first");
+                if let AstNodeEnum::Comment(comment) = &module.children[0] {
+                    pos.set(1, 1, 2, 9);
+                    assert_eq!(comment.position, pos);
+                    assert_eq!(comment.value, "# first");
                 }
                 if let AstNodeEnum::GraphDef(graph_def) = &module.children[1] {
-                    assert!(graph_def.alias.is_none());
+                    pos.set(2, 5, 1, 2);
+                    assert_eq!(graph_def.position, pos);
                     assert_eq!(graph_def.children.len(), 5);
                     if let AstNodeEnum::AttrDef(attr_def) = &graph_def.children[1] {
-                        assert_eq!(attr_def.name.name, "description");
+                        pos.set(3, 3, 5, 32);
+                        assert_eq!(attr_def.position, pos);
+                        pos.set(3, 3, 5, 16);
+                        assert_symbol(
+                            &attr_def.name,
+                            &pos,
+                            "description",
+                            SymbolKind::GraphProperty,
+                        );
+                        pos.set(3, 3, 19, 31);
+                        assert_string_value(attr_def.value.clone(), &pos, "test graph");
+                        assert!(attr_def.condition.is_none());
+                        assert!(attr_def.else_value.is_none());
                     }
                     if let AstNodeEnum::NodeDef(node_def) = &graph_def.children[3] {
-                        assert_eq!(node_def.value.name_or_ref.name, "data_loader");
+                        pos.set(4, 4, 5, 32);
+                        assert_eq!(node_def.position, pos);
+                        pos.set(4, 4, 5, 15);
+                        assert_symbol(
+                            &node_def.outputs[0],
+                            &pos,
+                            "input_node",
+                            SymbolKind::NodeOutput,
+                        );
+                        pos.set(4, 4, 18, 31);
+                        assert_eq!(node_def.value.position, pos);
+                        pos.set(4, 4, 18, 29);
+                        assert_symbol(
+                            &node_def.value.name_or_ref,
+                            &pos,
+                            "data_loader",
+                            SymbolKind::NodeName,
+                        );
+                        assert!(node_def.value.inputs.is_none());
+                        assert!(node_def.value.attrs.is_none());
                     }
+                    assert!(graph_def.alias.is_none());
+                    assert!(graph_def.version.is_none());
+                    assert!(graph_def.template_graph.is_none());
+                    assert!(graph_def.template_version.is_none());
+                    assert!(graph_def.offset.is_none());
                 }
-                if let AstNodeEnum::Comment(commnt) = &module.children[2] {
-                    assert_eq!(commnt.value, "# graph end");
+                if let AstNodeEnum::Comment(comment) = &module.children[2] {
+                    pos.set(5, 5, 4, 15);
+                    assert_eq!(comment.position, pos);
+                    assert_eq!(comment.value, "# graph end");
                 }
             }
             _ => panic!("Expected Module"),
