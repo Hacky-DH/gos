@@ -189,10 +189,10 @@ var {
                             _ => panic!("Expected AttrDef"),
                         }
                     }
-                    _ => panic!("Expected VarDef node"),
+                    _ => panic!("Expected VarDef"),
                 }
             }
-            _ => panic!("Expected Module node"),
+            _ => panic!("Expected Module"),
         }
     }
 
@@ -487,9 +487,9 @@ var {
                         _ => panic!("Expected AttrDef"),
                     }
                 }
-                _ => panic!("Expected VarDef node"),
+                _ => panic!("Expected VarDef"),
             },
-            _ => panic!("Expected Module node"),
+            _ => panic!("Expected Module"),
         }
     }
 }
@@ -555,10 +555,10 @@ var {
                             _ => panic!("Expected AttrDef for second child"),
                         }
                     }
-                    _ => panic!("Expected VarDef node"),
+                    _ => panic!("Expected VarDef"),
                 }
             }
-            _ => panic!("Expected Module node"),
+            _ => panic!("Expected Module"),
         }
     }
 
@@ -578,9 +578,9 @@ var {
                     assert!(var_def.alias.is_none());
                     assert_eq!(var_def.children.len(), 2);
                 }
-                _ => panic!("Expected VarDef node"),
+                _ => panic!("Expected VarDef"),
             },
-            _ => panic!("Expected Module node"),
+            _ => panic!("Expected Module"),
         }
     }
 
@@ -603,28 +603,28 @@ var {
                     AstNodeEnum::VarDef(var_def) => {
                         assert_eq!(var_def.children.len(), 1);
                     }
-                    _ => panic!("Expected VarDef node"),
+                    _ => panic!("Expected VarDef"),
                 }
                 match &module.children[1] {
                     AstNodeEnum::VarDef(var_def) => {
                         assert_eq!(var_def.children.len(), 1);
                     }
-                    _ => panic!("Expected VarDef node"),
+                    _ => panic!("Expected VarDef"),
                 }
             }
-            _ => panic!("Expected Module node"),
+            _ => panic!("Expected Module"),
         }
     }
 
     #[test]
     fn test_var_with_comment() {
         let content = r#"
-# first comment
+// first comment
 var { # second comment
     name = "test"; # in line comment
     value = 42;
     # one line comment
-} as config; # end var comment
+} as config; /* end var comment */
 # end line comment
 "#;
         let ast = assert_parse_success(content);
@@ -633,7 +633,7 @@ var { # second comment
             AstNodeEnum::Module(module) => {
                 assert_eq!(module.children.len(), 4);
                 if let AstNodeEnum::Comment(commnt) = &module.children[0] {
-                    assert_eq!(commnt.value, "# first comment");
+                    assert_eq!(commnt.value, "// first comment");
                 }
                 if let AstNodeEnum::VarDef(var_def) = &module.children[1] {
                     assert_eq!(var_def.children.len(), 5);
@@ -648,13 +648,13 @@ var { # second comment
                     }
                 }
                 if let AstNodeEnum::Comment(commnt) = &module.children[2] {
-                    assert_eq!(commnt.value, "# end var comment");
+                    assert_eq!(commnt.value, "/* end var comment */");
                 }
                 if let AstNodeEnum::Comment(commnt) = &module.children[3] {
                     assert_eq!(commnt.value, "# end line comment");
                 }
             }
-            _ => panic!("Expected Module node"),
+            _ => panic!("Expected Module"),
         }
     }
 
@@ -668,9 +668,9 @@ var { # second comment
                 AstNodeEnum::VarDef(var_def) => {
                     assert_eq!(var_def.children.len(), 0);
                 }
-                _ => panic!("Expected VarDef node"),
+                _ => panic!("Expected VarDef"),
             },
-            _ => panic!("Expected Module node"),
+            _ => panic!("Expected Module"),
         }
     }
 
@@ -718,9 +718,9 @@ var {
                         }
                     }
                 }
-                _ => panic!("Expected VarDef node"),
+                _ => panic!("Expected VarDef"),
             },
-            _ => panic!("Expected Module node"),
+            _ => panic!("Expected Module"),
         }
     }
 }
@@ -741,31 +741,58 @@ mod import_tests {
                 match &module.children[0] {
                     AstNodeEnum::Import(import) => {
                         assert_eq!(import.items.len(), 1);
-                        assert_eq!(import.items[0].path.name, "foo");
-                        assert!(import.items[0].alias.is_none());
+                        let item = &import.items[0];
+                        assert_eq!(item.path.name, "foo");
+                        assert_eq!(item.path.kind, SymbolKind::ImportName);
+                        assert!(item.alias.is_none());
                     }
-                    _ => panic!("Expected Import node"),
+                    _ => panic!("Expected Import"),
                 }
             }
-            _ => panic!("Expected Module node"),
+            _ => panic!("Expected Module"),
+        }
+    }
+
+    #[test]
+    fn test_import_dot() {
+        let content = r#"import foo.abc;"#;
+        let ast = assert_parse_success(content);
+
+        match ast {
+            AstNodeEnum::Module(module) => {
+                assert_eq!(module.children.len(), 1);
+                match &module.children[0] {
+                    AstNodeEnum::Import(import) => {
+                        assert_eq!(import.items.len(), 1);
+                        let item = &import.items[0];
+                        assert_eq!(item.path.name, "foo.abc");
+                        assert_eq!(item.path.kind, SymbolKind::ImportName);
+                        assert!(item.alias.is_none());
+                    }
+                    _ => panic!("Expected Import"),
+                }
+            }
+            _ => panic!("Expected Module"),
         }
     }
 
     #[test]
     fn test_parse_import_with_alias() {
-        let content = r#"import foo as bar;"#;
+        let content = r#"import foo.how.long as bar;"#;
         let ast = assert_parse_success(content);
 
         match ast {
             AstNodeEnum::Module(module) => match &module.children[0] {
                 AstNodeEnum::Import(import) => {
-                    assert_eq!(import.items[0].path.name, "foo");
-                    assert!(import.items[0].alias.is_some());
-                    assert_eq!(import.items[0].alias.as_ref().unwrap().name, "bar");
+                    assert_eq!(import.items.len(), 1);
+                    let item = &import.items[0];
+                    assert_eq!(item.path.name, "foo.how.long");
+                    assert_eq!(item.path.kind, SymbolKind::ImportName);
+                    assert_eq!(item.alias.as_ref().unwrap().name, "bar");
                 }
-                _ => panic!("Expected Import node"),
+                _ => panic!("Expected Import"),
             },
-            _ => panic!("Expected Module node"),
+            _ => panic!("Expected Module"),
         }
     }
 
@@ -781,11 +808,11 @@ mod import_tests {
                     assert_eq!(import.items[0].path.name, "foo");
                     assert_eq!(import.items[1].path.name, "bar");
                     assert_eq!(import.items[2].path.name, "baz");
-                    assert!(import.items[2].alias.is_some());
+                    assert_eq!(import.items[2].alias.as_ref().unwrap().name, "qux");
                 }
-                _ => panic!("Expected Import node"),
+                _ => panic!("Expected Import"),
             },
-            _ => panic!("Expected Module node"),
+            _ => panic!("Expected Module"),
         }
     }
 }
@@ -794,29 +821,40 @@ mod import_tests {
 mod graph_tests {
     use crate::ast::*;
     use crate::tests::*;
+    // TODO 测试 图模板  
 
     #[test]
     fn test_parse_simple_graph() {
-        let content = r#"
-graph {
-    description = "test graph";
-    input_node = data_loader();
-}
+        let content = r#" # first
+graph { # graph start
+    description = "test graph"; # description comment
+    input_node = data_loader(); # input node
+}; # graph end
 "#;
         let ast = assert_parse_success(content);
 
         match ast {
+            // TODO 测试position
             AstNodeEnum::Module(module) => {
-                assert_eq!(module.children.len(), 1);
-                match &module.children[0] {
-                    AstNodeEnum::GraphDef(graph_def) => {
-                        assert!(graph_def.alias.is_none());
-                        assert!(!graph_def.children.is_empty());
+                assert_eq!(module.children.len(), 3);
+                if let AstNodeEnum::Comment(commnt) = &module.children[0] {
+                    assert_eq!(commnt.value, "# first");
+                }
+                if let AstNodeEnum::GraphDef(graph_def) = &module.children[1] {
+                    assert!(graph_def.alias.is_none());
+                    assert_eq!(graph_def.children.len(), 5);
+                    if let AstNodeEnum::AttrDef(attr_def) = &graph_def.children[1] {
+                        assert_eq!(attr_def.name.name, "description");
                     }
-                    _ => panic!("Expected GraphDef node"),
+                    if let AstNodeEnum::NodeDef(node_def) = &graph_def.children[3] {
+                        assert_eq!(node_def.value.name_or_ref.name, "data_loader");
+                    }
+                }
+                if let AstNodeEnum::Comment(commnt) = &module.children[2] {
+                    assert_eq!(commnt.value, "# graph end");
                 }
             }
-            _ => panic!("Expected Module node"),
+            _ => panic!("Expected Module"),
         }
     }
 
@@ -835,9 +873,9 @@ graph {
                 AstNodeEnum::GraphDef(graph_def) => {
                     assert!(graph_def.alias.is_some());
                 }
-                _ => panic!("Expected GraphDef node"),
+                _ => panic!("Expected GraphDef"),
             },
-            _ => panic!("Expected Module node"),
+            _ => panic!("Expected Module"),
         }
     }
 
@@ -868,9 +906,9 @@ graph {
                     assert!(graph_def.alias.is_some());
                     assert!(!graph_def.children.is_empty());
                 }
-                _ => panic!("Expected GraphDef node"),
+                _ => panic!("Expected GraphDef"),
             },
-            _ => panic!("Expected Module node"),
+            _ => panic!("Expected Module"),
         }
     }
 }
@@ -892,10 +930,10 @@ mod comment_tests {
                     AstNodeEnum::Comment(comment) => {
                         assert!(comment.value.contains("This is a comment"));
                     }
-                    _ => panic!("Expected Comment node"),
+                    _ => panic!("Expected Comment"),
                 }
             }
-            _ => panic!("Expected Module node"),
+            _ => panic!("Expected Module"),
         }
     }
 
@@ -916,10 +954,10 @@ multiline comment
                     AstNodeEnum::Comment(comment) => {
                         assert!(comment.value.contains("multiline comment"));
                     }
-                    _ => panic!("Expected Comment node"),
+                    _ => panic!("Expected Comment "),
                 }
             }
-            _ => panic!("Expected Module node"),
+            _ => panic!("Expected Module"),
         }
     }
 }
@@ -953,7 +991,7 @@ graph {
             AstNodeEnum::Module(module) => {
                 assert_eq!(module.children.len(), 4); // comment, import, var, graph
             }
-            _ => panic!("Expected Module node"),
+            _ => panic!("Expected Module"),
         }
     }
 
@@ -966,7 +1004,7 @@ graph {
             AstNodeEnum::Module(module) => {
                 assert_eq!(module.children.len(), 0);
             }
-            _ => panic!("Expected Module node"),
+            _ => panic!("Expected Module"),
         }
     }
 
@@ -979,30 +1017,7 @@ graph {
             AstNodeEnum::Module(module) => {
                 assert_eq!(module.children.len(), 0);
             }
-            _ => panic!("Expected Module node"),
+            _ => panic!("Expected Module"),
         }
-    }
-}
-
-mod comments_tests {
-    use crate::ast::*;
-    use crate::tests::*;
-
-    #[test]
-    fn test_comments() {
-        // let content = r#"
-        // # Single line comment
-        // var {
-        //     name = "test"; # Inline comment
-        // };
-
-        // """
-        // Multi-line comment
-        // spanning multiple lines
-        // """
-        // "#;
-
-        // let result = parse(content);
-        // assert!(result.is_ok(), "Failed to parse comments: {:?}", result);
     }
 }

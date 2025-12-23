@@ -46,7 +46,6 @@ property = { "property" }
 url = { "url" }
 fname = { "fname" }
 null = { "null" }
-comment = { "comment" }
 override = { "override" }
 log = { "log" }
 metrics = { "metrics" }
@@ -152,8 +151,8 @@ dotted_as_name = { dotted_name ~ (as_keyword ~ all_identifier)? }
 dotted_name = @{ all_identifier ~ (DOT ~ all_identifier)* }
 
 // Graph definitions
-graph_def = { graph_template ~ LBRACE ~ graph_block ~ RBRACE ~ (as_keyword ~ as_stmt)? }
-graph_template = { graph ~ (COLON ~ as_stmt)? }
+graph_def = { (graph | graph_template) ~ LBRACE ~ graph_block ~ RBRACE ~ (as_keyword ~ as_stmt)? }
+graph_template = { graph ~ COLON ~ as_stmt }
 as_stmt = { dotted_name ~ (LPAREN ~ STRING ~ RPAREN)? }
 
 graph_block = { graph_stmt* }
@@ -167,7 +166,7 @@ graph_value = {
     for_loop_block
 }
 
-dotted_identifiers = { dotted_name ~ (COMMA ~ dotted_name)* }
+dotted_identifiers = @{ dotted_name ~ (COMMA ~ dotted_name)* }
 
 // Node definitions
 node_def = { dotted_identifiers ~ DEFINED_BY ~ (node_block | for_loop_block) }
@@ -331,7 +330,7 @@ date_stmt = { date ~ LPAREN ~ STRING ~ RPAREN }
 keywords = {
     graph | op | node | edge | var | meta | import | as_keyword | from | ref | for | in | if_keyword | or | else_keyword |
     input | output | depend | version | with | date | config | name | dtype | default |
-    pattern | help | choice | length | range | condition | property | url | fname | null | comment |
+    pattern | help | choice | length | range | condition | property | url | fname | null |
     override | log | metrics | funnel
 }
 
