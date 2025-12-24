@@ -33,6 +33,7 @@ pub struct ParseOptions {
 }
 
 /// Main parsing function - entry point for GOS parsing
+/// 成功返回根节点，失败返回解析错误
 pub fn parse_gos(content: &str, options: ParseOptions) -> ParseResult<AstNodeEnum> {
     let mut parser = GosParserImpl::new(options);
     parser.parse(content)
@@ -54,6 +55,7 @@ impl GosParserImpl {
         }
     }
 
+    /// 调试打印一条 Pair：当 self.options.debug 为真时，向 stderr 输出规则名与前 50 字节内容。
     fn debug(&self, pair: &pest::iterators::Pair<Rule>) {
         if self.options.debug {
             let pair_str = pair.as_str();
@@ -396,7 +398,7 @@ impl GosParserImpl {
                     alias = Some(Symbol {
                         position,
                         name: graph_pair.as_str().to_string(),
-                        kind: SymbolKind::VarRef,
+                        kind: SymbolKind::GraphAsName,
                     });
                 }
                 _ => {}
@@ -789,7 +791,7 @@ impl GosParserImpl {
         let mut name_pair = None;
         if let Some(next_pair) = stmt_pair.next() {
             self.debug(&next_pair);
-            if next_pair.as_rule() == Rule::dotted_identifiers {
+            if next_pair.as_rule() == Rule::comma_dotted_names {
                 name_pair = Some(next_pair);
             }
         }
@@ -819,18 +821,25 @@ impl GosParserImpl {
                 Rule::value => {
                     return Ok(AstNodeEnum::AttrDef(AttrDef {
                         position: position.clone(),
-                        name: self.parse_symbol(name_pair, SymbolKind::GraphProperty)?,
+                        name: self.parse_comma_dotted_names_for_one_symbol(
+                            name_pair,
+                            SymbolKind::GraphProperty,
+                        )?,
                         value: Box::new(self.parse_value(inner_pair)?),
                         condition: None,
                         else_value: None,
                     }));
                 }
-                Rule::dotted_identifiers => {
+                Rule::comma_dotted_names => {
                     return Ok(AstNodeEnum::RefDef(RefDef {
                         position: position.clone(),
-                        name: self.parse_symbol(name_pair, SymbolKind::GraphProperty)?,
+                        name: self.parse_comma_dotted_names_for_one_symbol(
+                            name_pair,
+                            SymbolKind::GraphProperty,
+                        )?,
                         value: self.parse_symbol(inner_pair, SymbolKind::VarRef)?,
-                        condition:None, default:None
+                        condition: None,
+                        default: None,
                     }));
                 }
                 Rule::node_block => {
@@ -838,7 +847,7 @@ impl GosParserImpl {
                 }
                 Rule::for_loop_block => {}
                 Rule::condition_section => {}
-                _ => break
+                _ => break,
             }
         }
         Err(ParseError::general("Invalid graph statement"))
@@ -851,13 +860,11 @@ impl GosParserImpl {
         name_pair: pest::iterators::Pair<Rule>,
     ) -> ParseResult<AstNodeEnum> {
         let block_position = self.get_position(&pair);
-        let mut node_name =None;
+        let mut node_name = None;
         let mut _inputs: Vec<AstNodeEnum> = Vec::new();
         let mut _attributes: Vec<AstNodeEnum> = Vec::new();
 
-        let output = self.parse_symbol(name_pair, SymbolKind::NodeOutput)?;
-        let mut outputs =  Vec::new();
-        outputs.push(output);
+        let outputs = self.parse_comma_dotted_names(name_pair, SymbolKind::NodeOutput)?;
 
         for inner_pair in pair.into_inner() {
             self.debug(&inner_pair);
@@ -880,11 +887,10 @@ impl GosParserImpl {
             }
         }
 
-
         Ok(AstNodeEnum::NodeDef(NodeDef {
             position: position.clone(),
             outputs: outputs,
-            value:  NodeBlock {
+            value: NodeBlock {
                 position: block_position.clone(),
                 name_or_ref: node_name.unwrap(),
                 inputs: None,
@@ -904,6 +910,36 @@ impl GosParserImpl {
         }))
     }
 
+    fn parse_comma_dotted_names_for_one_symbol(
+        &mut self,
+        pair: pest::iterators::Pair<Rule>,
+        kind: SymbolKind,
+    ) -> ParseResult<Symbol> {
+        let names = self.parse_comma_dotted_names(pair, kind)?;
+        if names.len() != 1 {
+            return Err(ParseError::general("Expected exactly one name"));
+        }
+        return Ok(names[0].clone());
+    }
+
+    fn parse_comma_dotted_names(
+        &mut self,
+        pair: pest::iterators::Pair<Rule>,
+        kind: SymbolKind,
+    ) -> ParseResult<Vec<Symbol>> {
+        let mut names = Vec::new();
+        for inner_pair in pair.into_inner() {
+            self.debug(&inner_pair);
+            if inner_pair.as_rule() == Rule::dotted_name {
+                names.push(self.parse_symbol(inner_pair, kind)?);
+            }
+        }
+        if names.len() == 0 {
+            return Err(ParseError::general("Expected at least one name"));
+        }
+        Ok(names)
+    }
+
     fn parse_node_def(&mut self, pair: pest::iterators::Pair<Rule>) -> ParseResult<AstNodeEnum> {
         let position = self.get_position(&pair);
         let mut outputs = Vec::new();
@@ -911,7 +947,7 @@ impl GosParserImpl {
 
         for inner_pair in pair.into_inner() {
             match inner_pair.as_rule() {
-                Rule::dotted_identifiers => {
+                Rule::comma_dotted_names => {
                     // Parse output identifiers
                     for id_pair in inner_pair.into_inner() {
                         if id_pair.as_rule() == Rule::dotted_name {

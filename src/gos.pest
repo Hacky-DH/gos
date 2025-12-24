@@ -156,20 +156,20 @@ graph_template = { graph ~ COLON ~ as_stmt }
 as_stmt = { dotted_name ~ (LPAREN ~ STRING ~ RPAREN)? }
 
 graph_block = { graph_stmt* }
-graph_stmt = { dotted_identifiers ~ DEFINED_BY ~ graph_value ~ ENDMARKER? | COMMENT }
+graph_stmt = { comma_dotted_names ~ DEFINED_BY ~ graph_value ~ ENDMARKER? | COMMENT }
 
 graph_value = {
     condition_section |
     node_block |
     value |
-    dotted_identifiers |
+    comma_dotted_names |
     for_loop_block
 }
 
-dotted_identifiers = @{ dotted_name ~ (COMMA ~ dotted_name)* }
+comma_dotted_names = { dotted_name ~ (COMMA ~ dotted_name)* }
 
 // Node definitions
-node_def = { dotted_identifiers ~ DEFINED_BY ~ (node_block | for_loop_block) }
+node_def = { comma_dotted_names ~ DEFINED_BY ~ (node_block | for_loop_block) }
 
 node_block = {
     dotted_name ~ LPAREN ~ inputs_def? ~ RPAREN ~ node_attrs* |
@@ -179,7 +179,7 @@ node_block = {
 node_attrs = {
     DOT ~ name ~ LPAREN ~ STRING ~ RPAREN |
     DOT ~ version ~ LPAREN ~ STRING ~ RPAREN |
-    DOT ~ depend ~ LPAREN ~ dotted_identifiers ~ RPAREN |
+    DOT ~ depend ~ LPAREN ~ comma_dotted_names ~ RPAREN |
     DOT ~ with ~ LPAREN ~ node_param_block ~ RPAREN |
     DOT ~ as_keyword ~ LPAREN ~ all_identifier ~ RPAREN |
     DOT ~ condition ~ LPAREN ~ STRING ~ RPAREN |
@@ -199,7 +199,7 @@ inputs_key_def = { dotted_name ~ DEFINED_BY ~ input_identifiers_paren }
 input_identifiers_paren = {
     dotted_name |
     LPAREN ~ dotted_name ~ COMMA ~ RPAREN |
-    LPAREN ~ dotted_name ~ COMMA ~ dotted_identifiers ~ RPAREN
+    LPAREN ~ dotted_name ~ COMMA ~ comma_dotted_names ~ RPAREN
 }
 
 node_param_block = { node_param_comment+ }
@@ -216,7 +216,7 @@ if_condition = { MULTI_LINE_STRING | STRING | dotted_name }
 for_loop_block = {
     LBRACKET ~ for_loop_block_no_if ~ (if_keyword ~ if_condition)? ~ RBRACKET
 }
-for_loop_block_no_if = { node_block ~ for ~ dotted_identifiers ~ in ~ dotted_name }
+for_loop_block_no_if = { node_block ~ for ~ comma_dotted_names ~ in ~ dotted_name }
 
 override_param = { NUMBER | BOOL }
 

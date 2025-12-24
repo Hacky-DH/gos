@@ -910,11 +910,18 @@ graph {
 } as test_pipeline;
 "#;
         let ast = assert_parse_success(content);
-
         match ast {
             AstNodeEnum::Module(module) => match &module.children[0] {
                 AstNodeEnum::GraphDef(graph_def) => {
+                    assert_eq!(graph_def.children.len(), 2);
                     assert!(graph_def.alias.is_some());
+                    let pos = Position::new_all(5, 5, 6, 19);
+                    assert_symbol_option(
+                        &graph_def.alias,
+                        &pos,
+                        "test_pipeline",
+                        SymbolKind::GraphAsName,
+                    );
                 }
                 _ => panic!("Expected GraphDef"),
             },
@@ -928,26 +935,43 @@ graph {
 graph {
     description = "Complex test pipeline";
     
-    a, b = builtin.node1().with(
+    a, b , c = builtin.node1().with(
         description="node1 description",
         attr1="demo attr",
         attr2=23.8,
         attr3=true
     ).version('1.1.0');
     
-    c = builtin.node2(a, b).with(
+    e.d, f.g.h = builtin.node2(a, b).with(
         attr1=42,
         attr2="test"
-    ).version("1.2.0");
+    ).version("1.2.0").as(d)
+    .property(prop1=86,type="bar")
+    .log(level=0);
 } as complex_pipeline.version("1.0.0");
 "#;
         let ast = assert_parse_success(content);
-
+        dbg!(&ast);
         match ast {
             AstNodeEnum::Module(module) => match &module.children[0] {
                 AstNodeEnum::GraphDef(graph_def) => {
-                    assert!(graph_def.alias.is_some());
-                    assert!(!graph_def.children.is_empty());
+                    let mut pos = Position::new_all(18, 18, 6, 22);
+                    assert_symbol_option(
+                        &graph_def.alias,
+                        &pos,
+                        "complex_pipeline",
+                        SymbolKind::GraphAsName,
+                    );
+                    assert_eq!(graph_def.children.len(), 3);
+                    if let AstNodeEnum::AttrDef(attr_def) = &graph_def.children[0] {
+                        pos.set(18, 18, 18, 34);
+                        assert_symbol(
+                            &attr_def.name,
+                            &pos,
+                            "description",
+                            SymbolKind::GraphProperty,
+                        );
+                    }
                 }
                 _ => panic!("Expected GraphDef"),
             },
