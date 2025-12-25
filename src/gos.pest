@@ -153,6 +153,7 @@ dotted_name = @{ all_identifier ~ (DOT ~ all_identifier)* }
 // Graph definitions
 graph_def = { (graph | graph_template) ~ LBRACE ~ graph_block ~ RBRACE ~ (as_keyword ~ as_stmt)? }
 graph_template = { graph ~ COLON ~ as_stmt }
+
 as_stmt = { dotted_name ~ (LPAREN ~ STRING ~ RPAREN)? }
 
 graph_block = { graph_stmt* }

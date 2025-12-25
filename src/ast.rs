@@ -1,5 +1,5 @@
 //! AST (Abstract Syntax Tree) node definitions for GOS parser
-//! 
+//!
 //! This module defines all the AST node types
 
 use chrono::{DateTime, Utc};
@@ -29,7 +29,7 @@ impl Position {
         }
     }
 
-    pub fn new_all(line: usize, end_line:usize, start: usize, end: usize) -> Self {
+    pub fn new_all(line: usize, end_line: usize, start: usize, end: usize) -> Self {
         Self {
             line,
             end_line: end_line,
@@ -43,7 +43,7 @@ impl Position {
         self
     }
 
-    pub fn set(&mut self, line: usize, end_line:usize, start: usize, end: usize) {
+    pub fn set(&mut self, line: usize, end_line: usize, start: usize, end: usize) {
         self.line = line;
         self.end_line = end_line;
         self.start = start;
@@ -547,7 +547,7 @@ impl AstNode for NodeDef {
     }
 }
 
-/// Node block (function call with attributes)
+/// Node block definition
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct NodeBlock {
     pub position: Position,

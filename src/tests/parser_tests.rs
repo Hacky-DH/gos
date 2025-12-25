@@ -951,7 +951,6 @@ graph {
 } as complex_pipeline.version("1.0.0");
 "#;
         let ast = assert_parse_success(content);
-        dbg!(&ast);
         match ast {
             AstNodeEnum::Module(module) => match &module.children[0] {
                 AstNodeEnum::GraphDef(graph_def) => {
@@ -962,9 +961,11 @@ graph {
                         "complex_pipeline",
                         SymbolKind::GraphAsName,
                     );
+                    pos.set(18, 18, 31, 38);
+                    assert_string_value(graph_def.version.clone().unwrap(), &pos, "1.0.0");
                     assert_eq!(graph_def.children.len(), 3);
                     if let AstNodeEnum::AttrDef(attr_def) = &graph_def.children[0] {
-                        pos.set(18, 18, 18, 34);
+                        pos.set(3, 3, 5, 16);
                         assert_symbol(
                             &attr_def.name,
                             &pos,
@@ -972,6 +973,22 @@ graph {
                             SymbolKind::GraphProperty,
                         );
                     }
+                    if let AstNodeEnum::NodeDef(node_def) = &graph_def.children[1] {
+                        pos.set(5, 10, 5, 24);
+                        assert_eq!(node_def.position, pos);
+                        assert_eq!(node_def.outputs.len(), 3);
+                        pos.set(5, 5, 5,6);
+                        assert_symbol(&node_def.outputs[0], &pos, "a", SymbolKind::NodeOutput);
+                        pos.set(5, 5, 8,9);
+                        assert_symbol(&node_def.outputs[1], &pos, "b", SymbolKind::NodeOutput);
+                        pos.set(5, 5, 12,13);
+                        assert_symbol(&node_def.outputs[2], &pos, "c", SymbolKind::NodeOutput);
+                        pos.set(5, 10, 16,23);
+                        assert_eq!(node_def.value.position, pos);
+                        // node_def.value.position
+                    }
+                    dbg!(&graph_def.children[1]);
+                    // TODO 测试input和attrs
                 }
                 _ => panic!("Expected GraphDef"),
             },

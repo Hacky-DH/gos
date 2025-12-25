@@ -368,7 +368,7 @@ impl GosParserImpl {
         let position = self.get_position(&pair);
         let mut children = Vec::new();
         let mut alias = None;
-        let version = None;
+        let mut version = None;
         let template_graph = None;
         let template_version = None;
         let offset = None;
@@ -393,13 +393,7 @@ impl GosParserImpl {
                     }
                 }
                 Rule::as_stmt => {
-                    // Handle alias
-                    let position = self.get_position(&graph_pair);
-                    alias = Some(Symbol {
-                        position,
-                        name: graph_pair.as_str().to_string(),
-                        kind: SymbolKind::GraphAsName,
-                    });
+                    (alias, version) = self.parse_as_stmt(graph_pair)?;
                 }
                 _ => {}
             }
@@ -414,6 +408,76 @@ impl GosParserImpl {
             template_version,
             offset,
         }))
+    }
+
+    fn parse_as_stmt(
+        &mut self,
+        pair: pest::iterators::Pair<Rule>,
+    ) -> ParseResult<(Option<Symbol>, Option<Box<AstNodeEnum>>)> {
+        // Handle alias and version
+        let mut position = None;
+        let mut alias = None;
+        let mut has_version = false;
+        let mut version = None;
+        for inner_pair in pair.into_inner() {
+            self.debug(&inner_pair);
+            match inner_pair.as_rule() {
+                Rule::dotted_name => {
+                    position = Some(self.get_position(&inner_pair));
+                    alias = Some(inner_pair.as_str().to_string());
+                }
+                Rule::LPAREN | Rule::RPAREN => {
+                    has_version = true;
+                }
+                Rule::STRING => {
+                    version = Some(self.parse_string_literal(inner_pair)?);
+                }
+                _ => {}
+            }
+        }
+        if has_version
+            && version.is_some()
+            && alias.is_some()
+            && alias.as_ref().unwrap().ends_with(".version")
+        {
+            if let Some(new_alias) = alias.as_ref().unwrap().strip_suffix(".version") {
+                if new_alias.is_empty() {
+                    return Err(ParseError::general(format!(
+                        "Invalid alias format {}",
+                        alias.unwrap()
+                    )));
+                }
+                let mut position = position.unwrap();
+                position.end -= ".version".len();
+                return Ok((
+                    Some(Symbol {
+                        position,
+                        name: new_alias.to_string(),
+                        kind: SymbolKind::GraphAsName,
+                    }),
+                    version.and_then(|res| Some(Box::new(res))),
+                ));
+            } else {
+                return Err(ParseError::general(format!(
+                    "Invalid alias format {}",
+                    alias.unwrap()
+                )));
+            }
+        } else if alias.is_some() {
+            return Ok((
+                Some(Symbol {
+                    position: position.unwrap(),
+                    name: alias.unwrap().to_string(),
+                    kind: SymbolKind::GraphAsName,
+                }),
+                None,
+            ));
+        } else {
+            return Err(ParseError::general(format!(
+                "Invalid alias format {}",
+                alias.unwrap()
+            )));
+        }
     }
 
     fn parse_op_def(&mut self, _pair: pest::iterators::Pair<Rule>) -> ParseResult<AstNodeEnum> {
