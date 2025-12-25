@@ -956,7 +956,7 @@ impl GosParserImpl {
             outputs: outputs,
             value: NodeBlock {
                 position: block_position.clone(),
-                name_or_ref: node_name.unwrap(),
+                name: node_name.unwrap(),
                 inputs: None,
                 attrs: None,
             },
@@ -1038,7 +1038,7 @@ impl GosParserImpl {
             outputs,
             value: node_block.unwrap_or_else(|| NodeBlock {
                 position: position.clone(),
-                name_or_ref: Symbol::new(position.clone(), "unknown".to_string()),
+                name: Symbol::new(position.clone(), "unknown".to_string()),
                 inputs: None,
                 attrs: None,
             }),
@@ -1050,14 +1050,14 @@ impl GosParserImpl {
         pair: pest::iterators::Pair<Rule>,
     ) -> ParseResult<NodeBlock> {
         let position = self.get_position(&pair);
-        let mut name_or_ref = Symbol::new(position.clone(), "unknown".to_string());
+        let mut name = Symbol::new(position.clone(), "unknown".to_string());
         let mut inputs = None;
         let mut attrs = Vec::new();
 
         for inner_pair in pair.into_inner() {
             match inner_pair.as_rule() {
                 Rule::dotted_name => {
-                    name_or_ref =
+                    name =
                         self.parse_dotted_name_as_symbol(inner_pair, SymbolKind::NodeName)?;
                 }
                 Rule::inputs_def => {
@@ -1077,7 +1077,7 @@ impl GosParserImpl {
 
         Ok(NodeBlock {
             position,
-            name_or_ref,
+            name,
             inputs,
             attrs: if attrs.is_empty() { None } else { Some(attrs) },
         })

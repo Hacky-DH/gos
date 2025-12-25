@@ -877,7 +877,7 @@ graph { # graph start
                         assert_eq!(node_def.value.position, pos);
                         pos.set(4, 4, 18, 29);
                         assert_symbol(
-                            &node_def.value.name_or_ref,
+                            &node_def.value.name,
                             &pos,
                             "data_loader",
                             SymbolKind::NodeName,

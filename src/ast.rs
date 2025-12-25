@@ -96,31 +96,11 @@ pub struct Module {
     pub children: Vec<AstNodeEnum>,
 }
 
-impl AstNode for Module {
-    fn position(&self) -> &Position {
-        &self.position
-    }
-
-    fn position_mut(&mut self) -> &mut Position {
-        &mut self.position
-    }
-}
-
 /// Comment node
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct Comment {
     pub position: Position,
     pub value: String,
-}
-
-impl AstNode for Comment {
-    fn position(&self) -> &Position {
-        &self.position
-    }
-
-    fn position_mut(&mut self) -> &mut Position {
-        &mut self.position
-    }
 }
 
 /// Symbol - represents identifiers with kind information
@@ -129,16 +109,6 @@ pub struct Symbol {
     pub position: Position,
     pub name: String,
     pub kind: SymbolKind,
-}
-
-impl AstNode for Symbol {
-    fn position(&self) -> &Position {
-        &self.position
-    }
-
-    fn position_mut(&mut self) -> &mut Position {
-        &mut self.position
-    }
 }
 
 impl Symbol {
@@ -186,31 +156,11 @@ pub struct StringLiteral {
     pub value: String,
 }
 
-impl AstNode for StringLiteral {
-    fn position(&self) -> &Position {
-        &self.position
-    }
-
-    fn position_mut(&mut self) -> &mut Position {
-        &mut self.position
-    }
-}
-
 /// Multi-line string literal
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MultiLineStringLiteral {
     pub position: Position,
     pub value: String,
-}
-
-impl AstNode for MultiLineStringLiteral {
-    fn position(&self) -> &Position {
-        &self.position
-    }
-
-    fn position_mut(&mut self) -> &mut Position {
-        &mut self.position
-    }
 }
 
 /// Number literal
@@ -221,32 +171,12 @@ pub struct NumberLiteral {
     pub value: i64,
 }
 
-impl AstNode for NumberLiteral {
-    fn position(&self) -> &Position {
-        &self.position
-    }
-
-    fn position_mut(&mut self) -> &mut Position {
-        &mut self.position
-    }
-}
-
 /// Float literal
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct FloatLiteral {
     pub position: Position,
     pub raw: String,
     pub value: f64,
-}
-
-impl AstNode for FloatLiteral {
-    fn position(&self) -> &Position {
-        &self.position
-    }
-
-    fn position_mut(&mut self) -> &mut Position {
-        &mut self.position
-    }
 }
 
 /// Boolean literal
@@ -257,32 +187,12 @@ pub struct BoolLiteral {
     pub value: bool,
 }
 
-impl AstNode for BoolLiteral {
-    fn position(&self) -> &Position {
-        &self.position
-    }
-
-    fn position_mut(&mut self) -> &mut Position {
-        &mut self.position
-    }
-}
-
 /// DateTime literal (deprecated)
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct DateTimeLiteral {
     pub position: Position,
     pub raw: String,
     pub value: DateTime<Utc>,
-}
-
-impl AstNode for DateTimeLiteral {
-    fn position(&self) -> &Position {
-        &self.position
-    }
-
-    fn position_mut(&mut self) -> &mut Position {
-        &mut self.position
-    }
 }
 
 /// Date literal
@@ -292,30 +202,10 @@ pub struct DateLiteral {
     pub value: String,
 }
 
-impl AstNode for DateLiteral {
-    fn position(&self) -> &Position {
-        &self.position
-    }
-
-    fn position_mut(&mut self) -> &mut Position {
-        &mut self.position
-    }
-}
-
 /// Null literal
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct NullLiteral {
     pub position: Position,
-}
-
-impl AstNode for NullLiteral {
-    fn position(&self) -> &Position {
-        &self.position
-    }
-
-    fn position_mut(&mut self) -> &mut Position {
-        &mut self.position
-    }
 }
 
 /// Collection types
@@ -334,32 +224,12 @@ pub struct DictStatement {
     pub items: Vec<DictItem>,
 }
 
-impl AstNode for DictStatement {
-    fn position(&self) -> &Position {
-        &self.position
-    }
-
-    fn position_mut(&mut self) -> &mut Position {
-        &mut self.position
-    }
-}
-
 /// Dictionary item (key-value pair)
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct DictItem {
     pub position: Position,
     pub key: Box<AstNodeEnum>,
     pub value: Box<AstNodeEnum>,
-}
-
-impl AstNode for DictItem {
-    fn position(&self) -> &Position {
-        &self.position
-    }
-
-    fn position_mut(&mut self) -> &mut Position {
-        &mut self.position
-    }
 }
 
 /// List statement
@@ -369,31 +239,11 @@ pub struct ListStatement {
     pub items: Vec<AstNodeEnum>,
 }
 
-impl AstNode for ListStatement {
-    fn position(&self) -> &Position {
-        &self.position
-    }
-
-    fn position_mut(&mut self) -> &mut Position {
-        &mut self.position
-    }
-}
-
 /// Tuple statement
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TupleStatement {
     pub position: Position,
     pub items: Vec<AstNodeEnum>,
-}
-
-impl AstNode for TupleStatement {
-    fn position(&self) -> &Position {
-        &self.position
-    }
-
-    fn position_mut(&mut self) -> &mut Position {
-        &mut self.position
-    }
 }
 
 /// Set statement
@@ -403,31 +253,11 @@ pub struct SetStatement {
     pub items: Vec<AstNodeEnum>,
 }
 
-impl AstNode for SetStatement {
-    fn position(&self) -> &Position {
-        &self.position
-    }
-
-    fn position_mut(&mut self) -> &mut Position {
-        &mut self.position
-    }
-}
-
 /// Import statement
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Import {
     pub position: Position,
     pub items: Vec<ImportItem>,
-}
-
-impl AstNode for Import {
-    fn position(&self) -> &Position {
-        &self.position
-    }
-
-    fn position_mut(&mut self) -> &mut Position {
-        &mut self.position
-    }
 }
 
 /// Import item
@@ -436,16 +266,6 @@ pub struct ImportItem {
     pub position: Position,
     pub path: Symbol,
     pub alias: Option<Symbol>,
-}
-
-impl AstNode for ImportItem {
-    fn position(&self) -> &Position {
-        &self.position
-    }
-
-    fn position_mut(&mut self) -> &mut Position {
-        &mut self.position
-    }
 }
 
 /// Attribute definition
@@ -458,16 +278,6 @@ pub struct AttrDef {
     pub else_value: Option<Box<AstNodeEnum>>,
 }
 
-impl AstNode for AttrDef {
-    fn position(&self) -> &Position {
-        &self.position
-    }
-
-    fn position_mut(&mut self) -> &mut Position {
-        &mut self.position
-    }
-}
-
 /// Reference definition
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct RefDef {
@@ -478,16 +288,6 @@ pub struct RefDef {
     pub default: Option<Box<AstNodeEnum>>,
 }
 
-impl AstNode for RefDef {
-    fn position(&self) -> &Position {
-        &self.position
-    }
-
-    fn position_mut(&mut self) -> &mut Position {
-        &mut self.position
-    }
-}
-
 /// Variable definition
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct VarDef {
@@ -495,16 +295,6 @@ pub struct VarDef {
     pub children: Vec<AstNodeEnum>,
     pub alias: Option<Symbol>,
     pub offset: Option<HashMap<String, usize>>,
-}
-
-impl AstNode for VarDef {
-    fn position(&self) -> &Position {
-        &self.position
-    }
-
-    fn position_mut(&mut self) -> &mut Position {
-        &mut self.position
-    }
 }
 
 /// Graph definition
@@ -519,16 +309,6 @@ pub struct GraphDef {
     pub offset: Option<HashMap<String, usize>>,
 }
 
-impl AstNode for GraphDef {
-    fn position(&self) -> &Position {
-        &self.position
-    }
-
-    fn position_mut(&mut self) -> &mut Position {
-        &mut self.position
-    }
-}
-
 /// Node definition
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct NodeDef {
@@ -537,33 +317,22 @@ pub struct NodeDef {
     pub value: NodeBlock,
 }
 
-impl AstNode for NodeDef {
-    fn position(&self) -> &Position {
-        &self.position
-    }
-
-    fn position_mut(&mut self) -> &mut Position {
-        &mut self.position
-    }
-}
-
 /// Node block definition
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct NodeBlock {
     pub position: Position,
-    pub name_or_ref: Symbol,
+    pub name: Symbol,
     pub inputs: Option<NodeInputDef>,
     pub attrs: Option<Vec<NodeAttr>>,
 }
 
-impl AstNode for NodeBlock {
-    fn position(&self) -> &Position {
-        &self.position
-    }
-
-    fn position_mut(&mut self) -> &mut Position {
-        &mut self.position
-    }
+/// ref Graph block definition
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct RefGraphBlock {
+    pub position: Position,
+    pub ref_name: Symbol,
+    pub inputs: Option<NodeInputDef>,
+    pub attrs: Option<Vec<NodeAttr>>,
 }
 
 /// Node input definition
@@ -580,31 +349,11 @@ pub struct NodeInputTuple {
     pub items: Vec<Symbol>,
 }
 
-impl AstNode for NodeInputTuple {
-    fn position(&self) -> &Position {
-        &self.position
-    }
-
-    fn position_mut(&mut self) -> &mut Position {
-        &mut self.position
-    }
-}
-
 /// Node input key-value definition
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct NodeInputKeyDef {
     pub position: Position,
     pub items: Vec<NodeInputKeyItem>,
-}
-
-impl AstNode for NodeInputKeyDef {
-    fn position(&self) -> &Position {
-        &self.position
-    }
-
-    fn position_mut(&mut self) -> &mut Position {
-        &mut self.position
-    }
 }
 
 /// Node input key-value item
@@ -615,31 +364,11 @@ pub struct NodeInputKeyItem {
     pub value: NodeInputValues,
 }
 
-impl AstNode for NodeInputKeyItem {
-    fn position(&self) -> &Position {
-        &self.position
-    }
-
-    fn position_mut(&mut self) -> &mut Position {
-        &mut self.position
-    }
-}
-
 /// Node input values
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct NodeInputValues {
     pub position: Position,
     pub items: Vec<Symbol>,
-}
-
-impl AstNode for NodeInputValues {
-    fn position(&self) -> &Position {
-        &self.position
-    }
-
-    fn position_mut(&mut self) -> &mut Position {
-        &mut self.position
-    }
 }
 
 /// Node attribute
@@ -649,16 +378,6 @@ pub struct NodeAttr {
     pub name: Symbol,
     pub value: NodeAttrValue,
     pub offset: Option<HashMap<String, usize>>,
-}
-
-impl AstNode for NodeAttr {
-    fn position(&self) -> &Position {
-        &self.position
-    }
-
-    fn position_mut(&mut self) -> &mut Position {
-        &mut self.position
-    }
 }
 
 /// Node attribute value
@@ -677,16 +396,6 @@ pub struct ConditionDef {
     pub value: Box<ConditionBlock>,
 }
 
-impl AstNode for ConditionDef {
-    fn position(&self) -> &Position {
-        &self.position
-    }
-
-    fn position_mut(&mut self) -> &mut Position {
-        &mut self.position
-    }
-}
-
 /// Condition block
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ConditionBlock {
@@ -694,16 +403,6 @@ pub struct ConditionBlock {
     pub condition: Box<ConditionExpr>,
     pub true_branch: Box<AstNodeEnum>,
     pub false_branch: Box<AstNodeEnum>,
-}
-
-impl AstNode for ConditionBlock {
-    fn position(&self) -> &Position {
-        &self.position
-    }
-
-    fn position_mut(&mut self) -> &mut Position {
-        &mut self.position
-    }
 }
 
 /// Condition expression
@@ -722,16 +421,6 @@ pub struct ConditionStatement {
     pub operator: String,
 }
 
-impl AstNode for ConditionStatement {
-    fn position(&self) -> &Position {
-        &self.position
-    }
-
-    fn position_mut(&mut self) -> &mut Position {
-        &mut self.position
-    }
-}
-
 /// For loop block
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ForLoopBlock {
@@ -741,16 +430,6 @@ pub struct ForLoopBlock {
     pub node: NodeBlock,
     pub condition: Option<Box<AstNodeEnum>>,
     pub offset: Option<HashMap<String, usize>>,
-}
-
-impl AstNode for ForLoopBlock {
-    fn position(&self) -> &Position {
-        &self.position
-    }
-
-    fn position_mut(&mut self) -> &mut Position {
-        &mut self.position
-    }
 }
 
 /// Op definition
@@ -763,32 +442,12 @@ pub struct OpDef {
     pub offset: Option<HashMap<String, usize>>,
 }
 
-impl AstNode for OpDef {
-    fn position(&self) -> &Position {
-        &self.position
-    }
-
-    fn position_mut(&mut self) -> &mut Position {
-        &mut self.position
-    }
-}
-
 /// Op meta section
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct OpMeta {
     pub position: Position,
     pub children: Vec<AttrDef>,
     pub offset: Option<HashMap<String, usize>>,
-}
-
-impl AstNode for OpMeta {
-    fn position(&self) -> &Position {
-        &self.position
-    }
-
-    fn position_mut(&mut self) -> &mut Position {
-        &mut self.position
-    }
 }
 
 /// Op input section
@@ -799,32 +458,12 @@ pub struct OpInput {
     pub offset: Option<HashMap<String, usize>>,
 }
 
-impl AstNode for OpInput {
-    fn position(&self) -> &Position {
-        &self.position
-    }
-
-    fn position_mut(&mut self) -> &mut Position {
-        &mut self.position
-    }
-}
-
 /// Op output section
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct OpOutput {
     pub position: Position,
     pub children: Vec<AstNodeEnum>,
     pub offset: Option<HashMap<String, usize>>,
-}
-
-impl AstNode for OpOutput {
-    fn position(&self) -> &Position {
-        &self.position
-    }
-
-    fn position_mut(&mut self) -> &mut Position {
-        &mut self.position
-    }
 }
 
 /// Op config section
@@ -835,32 +474,12 @@ pub struct OpConfig {
     pub offset: Option<HashMap<String, usize>>,
 }
 
-impl AstNode for OpConfig {
-    fn position(&self) -> &Position {
-        &self.position
-    }
-
-    fn position_mut(&mut self) -> &mut Position {
-        &mut self.position
-    }
-}
-
 /// Op spec definition
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct OpSpec {
     pub position: Position,
     pub name: Symbol,
     pub items: Option<Vec<OpSpecItem>>,
-}
-
-impl AstNode for OpSpec {
-    fn position(&self) -> &Position {
-        &self.position
-    }
-
-    fn position_mut(&mut self) -> &mut Position {
-        &mut self.position
-    }
 }
 
 /// Op spec item
@@ -871,32 +490,12 @@ pub struct OpSpecItem {
     pub value: Box<AstNodeEnum>,
 }
 
-impl AstNode for OpSpecItem {
-    fn position(&self) -> &Position {
-        &self.position
-    }
-
-    fn position_mut(&mut self) -> &mut Position {
-        &mut self.position
-    }
-}
-
 /// Interval types
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct ClosedInterval {
     pub position: Position,
     pub ge: Option<NumberLiteral>,
     pub le: Option<NumberLiteral>,
-}
-
-impl AstNode for ClosedInterval {
-    fn position(&self) -> &Position {
-        &self.position
-    }
-
-    fn position_mut(&mut self) -> &mut Position {
-        &mut self.position
-    }
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -908,16 +507,70 @@ pub struct MixInterval {
     pub lt: Option<NumberLiteral>,
 }
 
-impl AstNode for MixInterval {
-    fn position(&self) -> &Position {
-        &self.position
-    }
+macro_rules! define_ast_enum {
+    (
+        $(#[$enum_meta:meta])*
+        $enum_vis:vis enum $enum_name:ident {
+            $(
+                $(#[$variant_meta:meta])*
+                $variant:ident($type:ident)
+            ),*
+            $(,)?
+        }
+    ) => {
+        // 1. 生成 enum 定义
+        $(#[$enum_meta])*
+        $enum_vis enum $enum_name {
+            $(
+                $(#[$variant_meta])*
+                $variant($type),
+            )*
+        }
 
-    fn position_mut(&mut self) -> &mut Position {
-        &mut self.position
-    }
+        // 2. 为每个具体类型实现 AstNode
+        $(
+            impl AstNode for $type {
+                fn position(&self) -> &Position {
+                    &self.position
+                }
+
+                fn position_mut(&mut self) -> &mut Position {
+                    &mut self.position
+                }
+            }
+        )*
+
+        // 3. 为 enum 实现 AstNode
+        impl AstNode for $enum_name {
+            fn position(&self) -> &Position {
+                match self {
+                    $(
+                        $enum_name::$variant(node) => node.position(),
+                    )*
+                }
+            }
+
+            fn position_mut(&mut self) -> &mut Position {
+                match self {
+                    $(
+                        $enum_name::$variant(node) => node.position_mut(),
+                    )*
+                }
+            }
+        }
+
+        // 4. 可选：生成 From 实现，方便转换
+        $(
+            impl From<$type> for $enum_name {
+                fn from(value: $type) -> Self {
+                    $enum_name::$variant(value)
+                }
+            }
+        )*
+    };
 }
 
+define_ast_enum! {
 /// Enum containing all possible AST node types
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub enum AstNodeEnum {
@@ -964,99 +617,4 @@ pub enum AstNodeEnum {
     ClosedInterval(ClosedInterval),
     MixInterval(MixInterval),
 }
-
-impl AstNode for AstNodeEnum {
-    fn position(&self) -> &Position {
-        match self {
-            AstNodeEnum::Module(n) => n.position(),
-            AstNodeEnum::Comment(n) => n.position(),
-            AstNodeEnum::Symbol(n) => n.position(),
-            AstNodeEnum::StringLiteral(n) => n.position(),
-            AstNodeEnum::MultiLineStringLiteral(n) => n.position(),
-            AstNodeEnum::NumberLiteral(n) => n.position(),
-            AstNodeEnum::FloatLiteral(n) => n.position(),
-            AstNodeEnum::BoolLiteral(n) => n.position(),
-            AstNodeEnum::DateTimeLiteral(n) => n.position(),
-            AstNodeEnum::DateLiteral(n) => n.position(),
-            AstNodeEnum::NullLiteral(n) => n.position(),
-            AstNodeEnum::DictStatement(n) => n.position(),
-            AstNodeEnum::DictItem(n) => n.position(),
-            AstNodeEnum::ListStatement(n) => n.position(),
-            AstNodeEnum::TupleStatement(n) => n.position(),
-            AstNodeEnum::SetStatement(n) => n.position(),
-            AstNodeEnum::Import(n) => n.position(),
-            AstNodeEnum::ImportItem(n) => n.position(),
-            AstNodeEnum::AttrDef(n) => n.position(),
-            AstNodeEnum::RefDef(n) => n.position(),
-            AstNodeEnum::VarDef(n) => n.position(),
-            AstNodeEnum::GraphDef(n) => n.position(),
-            AstNodeEnum::NodeDef(n) => n.position(),
-            AstNodeEnum::NodeBlock(n) => n.position(),
-            AstNodeEnum::NodeInputTuple(n) => n.position(),
-            AstNodeEnum::NodeInputKeyDef(n) => n.position(),
-            AstNodeEnum::NodeInputKeyItem(n) => n.position(),
-            AstNodeEnum::NodeInputValues(n) => n.position(),
-            AstNodeEnum::NodeAttr(n) => n.position(),
-            AstNodeEnum::ConditionDef(n) => n.position(),
-            AstNodeEnum::ConditionBlock(n) => n.position(),
-            AstNodeEnum::ConditionStatement(n) => n.position(),
-            AstNodeEnum::ForLoopBlock(n) => n.position(),
-            AstNodeEnum::OpDef(n) => n.position(),
-            AstNodeEnum::OpMeta(n) => n.position(),
-            AstNodeEnum::OpInput(n) => n.position(),
-            AstNodeEnum::OpOutput(n) => n.position(),
-            AstNodeEnum::OpConfig(n) => n.position(),
-            AstNodeEnum::OpSpec(n) => n.position(),
-            AstNodeEnum::OpSpecItem(n) => n.position(),
-            AstNodeEnum::ClosedInterval(n) => n.position(),
-            AstNodeEnum::MixInterval(n) => n.position(),
-        }
-    }
-
-    fn position_mut(&mut self) -> &mut Position {
-        match self {
-            AstNodeEnum::Module(n) => n.position_mut(),
-            AstNodeEnum::Comment(n) => n.position_mut(),
-            AstNodeEnum::Symbol(n) => n.position_mut(),
-            AstNodeEnum::StringLiteral(n) => n.position_mut(),
-            AstNodeEnum::MultiLineStringLiteral(n) => n.position_mut(),
-            AstNodeEnum::NumberLiteral(n) => n.position_mut(),
-            AstNodeEnum::FloatLiteral(n) => n.position_mut(),
-            AstNodeEnum::BoolLiteral(n) => n.position_mut(),
-            AstNodeEnum::DateTimeLiteral(n) => n.position_mut(),
-            AstNodeEnum::DateLiteral(n) => n.position_mut(),
-            AstNodeEnum::NullLiteral(n) => n.position_mut(),
-            AstNodeEnum::DictStatement(n) => n.position_mut(),
-            AstNodeEnum::DictItem(n) => n.position_mut(),
-            AstNodeEnum::ListStatement(n) => n.position_mut(),
-            AstNodeEnum::TupleStatement(n) => n.position_mut(),
-            AstNodeEnum::SetStatement(n) => n.position_mut(),
-            AstNodeEnum::Import(n) => n.position_mut(),
-            AstNodeEnum::ImportItem(n) => n.position_mut(),
-            AstNodeEnum::AttrDef(n) => n.position_mut(),
-            AstNodeEnum::RefDef(n) => n.position_mut(),
-            AstNodeEnum::VarDef(n) => n.position_mut(),
-            AstNodeEnum::GraphDef(n) => n.position_mut(),
-            AstNodeEnum::NodeDef(n) => n.position_mut(),
-            AstNodeEnum::NodeBlock(n) => n.position_mut(),
-            AstNodeEnum::NodeInputTuple(n) => n.position_mut(),
-            AstNodeEnum::NodeInputKeyDef(n) => n.position_mut(),
-            AstNodeEnum::NodeInputKeyItem(n) => n.position_mut(),
-            AstNodeEnum::NodeInputValues(n) => n.position_mut(),
-            AstNodeEnum::NodeAttr(n) => n.position_mut(),
-            AstNodeEnum::ConditionDef(n) => n.position_mut(),
-            AstNodeEnum::ConditionBlock(n) => n.position_mut(),
-            AstNodeEnum::ConditionStatement(n) => n.position_mut(),
-            AstNodeEnum::ForLoopBlock(n) => n.position_mut(),
-            AstNodeEnum::OpDef(n) => n.position_mut(),
-            AstNodeEnum::OpMeta(n) => n.position_mut(),
-            AstNodeEnum::OpInput(n) => n.position_mut(),
-            AstNodeEnum::OpOutput(n) => n.position_mut(),
-            AstNodeEnum::OpConfig(n) => n.position_mut(),
-            AstNodeEnum::OpSpec(n) => n.position_mut(),
-            AstNodeEnum::OpSpecItem(n) => n.position_mut(),
-            AstNodeEnum::ClosedInterval(n) => n.position_mut(),
-            AstNodeEnum::MixInterval(n) => n.position_mut(),
-        }
-    }
 }

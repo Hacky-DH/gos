@@ -322,14 +322,14 @@ impl Formatter {
         let mut buffer = IndentBuffer::new(self.indent, begin_indent);
         
         // Check if this is a reference or direct node call
-        if node.name_or_ref.kind == SymbolKind::NodeName {
-            buffer.writes(&[&node.name_or_ref.name, "("]);
+        if node.name.kind == SymbolKind::NodeName {
+            buffer.writes(&[&node.name.name, "("]);
             if let Some(inputs) = &node.inputs {
                 buffer.write(&self.format_node_inputs(inputs));
             }
             buffer.write(")");
         } else {
-            buffer.writes(&["ref(", &node.name_or_ref.name, "("]);
+            buffer.writes(&["ref(", &node.name.name, "("]);
             if let Some(inputs) = &node.inputs {
                 buffer.write(&self.format_node_inputs(inputs));
             }

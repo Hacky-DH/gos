@@ -275,7 +275,7 @@ impl Compiler {
                         // This is actually a node definition, not a property
                         // Create a NodeDef from the NodeBlock and AttrDef name
                         let node_dict = NodeDict {
-                            op_name: Some(node_block.name_or_ref.name.clone()),
+                            op_name: Some(node_block.name.name.clone()),
                             ref_graph: None,
                             version: None,
                             outputs: Some(vec![attr_def.name.name.clone()]),
@@ -322,7 +322,7 @@ impl Compiler {
     /// Convert node definition to dictionary
     fn convert_node_def(&self, node_def: &NodeDef, vars: &HashMap<String, Value>) -> ParseResult<NodeDict> {
         let mut node_dict = NodeDict {
-            op_name: Some(node_def.value.name_or_ref.name.clone()),
+            op_name: Some(node_def.value.name.name.clone()),
             ref_graph: None,
             version: None,
             outputs: Some(node_def.outputs.iter().map(|s| s.name.clone()).collect()),
