@@ -1115,17 +1115,9 @@ impl GosParserImpl {
         let mut items = Vec::new();
 
         for inner_pair in pair.into_inner() {
-            if inner_pair.as_rule() == Rule::inputs_tuple_def {
-                for tuple_item in inner_pair.into_inner() {
-                    match tuple_item.as_rule() {
-                        Rule::dotted_name => {
-                            let symbol = self
-                                .parse_dotted_name_as_symbol(tuple_item, SymbolKind::NodeInput)?;
-                            items.push(symbol);
-                        }
-                        _ => {}
-                    }
-                }
+            self.debug(&inner_pair);
+            if inner_pair.as_rule() == Rule::one_inputs_def {
+                items.push(Box::new(self.parse_one_inputs_def(inner_pair)?));
             }
         }
 
@@ -1144,7 +1136,6 @@ impl GosParserImpl {
                 items.push(self.parse_inputs_key_def(inner_pair)?);
             }
         }
-
         Ok(NodeInputDef::KeyValue(NodeInputKeyDef { position, items }))
     }
 
@@ -1153,34 +1144,49 @@ impl GosParserImpl {
         pair: pest::iterators::Pair<Rule>,
     ) -> ParseResult<NodeInputKeyItem> {
         let position = self.get_position(&pair);
-        let mut key = Symbol::new(position.clone(), "unknown".to_string());
-        let mut value_items = Vec::new();
-
-        let mut inner_pairs = pair.into_inner();
-
-        if let Some(key_pair) = inner_pairs.next() {
-            key = self.parse_dotted_name_as_symbol(key_pair, SymbolKind::NodeInputKey)?;
-        }
-
-        if let Some(value_pair) = inner_pairs.next() {
-            // Parse input_identifiers_paren
-            for id_pair in value_pair.into_inner() {
-                if id_pair.as_rule() == Rule::dotted_name {
-                    let symbol =
-                        self.parse_dotted_name_as_symbol(id_pair, SymbolKind::NodeInput)?;
-                    value_items.push(symbol);
+        let mut key = None;
+        let mut value = None;
+        for inner_pair in pair.into_inner() {
+            self.debug(&inner_pair);
+            match inner_pair.as_rule() {
+                Rule::dotted_name => {
+                    key = Some(
+                        self.parse_dotted_name_as_symbol(inner_pair, SymbolKind::NodeInputKey)?,
+                    );
                 }
+                Rule::one_inputs_def => {
+                    value = Some(self.parse_one_inputs_def(inner_pair)?);
+                }
+                _ => {}
             }
         }
 
         Ok(NodeInputKeyItem {
-            position: position.clone(),
-            key,
-            value: NodeInputValues {
-                position,
-                items: value_items,
-            },
+            position,
+            key: key.unwrap(),
+            value: Box::new(value.unwrap()),
         })
+    }
+
+    fn parse_one_inputs_def(
+        &mut self,
+        pair: pest::iterators::Pair<Rule>,
+    ) -> ParseResult<AstNodeEnum> {
+        for inner_pair in pair.into_inner() {
+            self.debug(&inner_pair);
+            match inner_pair.as_rule() {
+                Rule::dotted_name => {
+                    return Ok(AstNodeEnum::Symbol(
+                        self.parse_dotted_name_as_symbol(inner_pair, SymbolKind::NodeInput)?,
+                    ));
+                }
+                Rule::value => {
+                    return self.parse_value(inner_pair);
+                }
+                _ => {}
+            }
+        }
+        Err(ParseError::general("Not a valid input definition"))
     }
 
     fn parse_node_attr(&mut self, pair: pest::iterators::Pair<Rule>) -> ParseResult<NodeAttr> {

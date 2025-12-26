@@ -634,24 +634,38 @@ var { # second comment
                 assert_eq!(module.children.len(), 4);
                 if let AstNodeEnum::Comment(comment) = &module.children[0] {
                     assert_eq!(comment.value, "// first comment");
+                } else {
+                    panic!("Expected Comment");
                 }
                 if let AstNodeEnum::VarDef(var_def) = &module.children[1] {
                     assert_eq!(var_def.children.len(), 5);
                     if let AstNodeEnum::Comment(comment) = &var_def.children[0] {
                         assert_eq!(comment.value, "# second comment");
+                    } else {
+                        panic!("Expected Comment");
                     }
                     if let AstNodeEnum::Comment(comment) = &var_def.children[2] {
                         assert_eq!(comment.value, "# in line comment");
+                    } else {
+                        panic!("Expected Comment");
                     }
                     if let AstNodeEnum::Comment(comment) = &var_def.children[4] {
                         assert_eq!(comment.value, "# one line comment");
+                    } else {
+                        panic!("Expected Comment");
                     }
+                } else {
+                    panic!("Expected VarDef");
                 }
                 if let AstNodeEnum::Comment(comment) = &module.children[2] {
                     assert_eq!(comment.value, "/* end var comment */");
+                } else {
+                    panic!("Expected Comment");
                 }
                 if let AstNodeEnum::Comment(comment) = &module.children[3] {
                     assert_eq!(comment.value, "# end line comment");
+                } else {
+                    panic!("Expected Comment");
                 }
             }
             _ => panic!("Expected Module"),
@@ -698,6 +712,8 @@ var {
                         } else {
                             panic!("Expected condition StringLiteral");
                         }
+                    } else {
+                        panic!("Expected AttrDef");
                     }
                     if let AstNodeEnum::AttrDef(attr_def) = &var_def.children[1] {
                         assert!(attr_def.condition.is_some());
@@ -716,6 +732,8 @@ var {
                         } else {
                             panic!("Expected else_value NumberLiteral");
                         }
+                    } else {
+                        panic!("Expected AttrDef");
                     }
                 }
                 _ => panic!("Expected VarDef"),
@@ -843,6 +861,8 @@ graph { # graph start
                     pos.set(1, 1, 2, 9);
                     assert_eq!(comment.position, pos);
                     assert_eq!(comment.value, "# first");
+                } else {
+                    panic!("Expected Comment");
                 }
                 if let AstNodeEnum::GraphDef(graph_def) = &module.children[1] {
                     pos.set(2, 5, 1, 2);
@@ -862,6 +882,8 @@ graph { # graph start
                         assert_string_value(attr_def.value.clone(), &pos, "test graph");
                         assert!(attr_def.condition.is_none());
                         assert!(attr_def.else_value.is_none());
+                    } else {
+                        panic!("Expected AttrDef");
                     }
                     if let AstNodeEnum::NodeDef(node_def) = &graph_def.children[3] {
                         pos.set(4, 4, 5, 32);
@@ -884,17 +906,23 @@ graph { # graph start
                         );
                         assert!(node_def.value.inputs.is_none());
                         assert!(node_def.value.attrs.is_none());
+                    } else {
+                        panic!("Expected NodeDef");
                     }
                     assert!(graph_def.alias.is_none());
                     assert!(graph_def.version.is_none());
                     assert!(graph_def.template_graph.is_none());
                     assert!(graph_def.template_version.is_none());
                     assert!(graph_def.offset.is_none());
+                } else {
+                    panic!("Expected GraphDef");
                 }
                 if let AstNodeEnum::Comment(comment) = &module.children[2] {
                     pos.set(5, 5, 4, 15);
                     assert_eq!(comment.position, pos);
                     assert_eq!(comment.value, "# graph end");
+                } else {
+                    panic!("Expected Comment");
                 }
             }
             _ => panic!("Expected Module"),
@@ -935,7 +963,7 @@ graph {
 graph {
     description = "Complex test pipeline";
     
-    a, b , c = builtin.node1(data.key=c, data.value=d).with(
+    a, b , c = builtin.node1(data.key=c, data.value="abc").with(
         description="node1 description",
         attr1="demo attr",
         attr2=23.8,
@@ -972,6 +1000,8 @@ graph {
                             "description",
                             SymbolKind::GraphProperty,
                         );
+                    } else {
+                        panic!("Expected AttrDef");
                     }
                     if let AstNodeEnum::NodeDef(node_def) = &graph_def.children[1] {
                         pos.set(5, 10, 5, 24);
@@ -986,11 +1016,38 @@ graph {
                         pos.set(5, 10, 16, 23);
                         assert_eq!(node_def.value.position, pos);
                         pos.set(5, 5, 16, 29);
-                        assert_symbol(&node_def.value.name, &pos, "builtin.node1", SymbolKind::NodeName);
-                        // node_def.value.position
+                        assert_symbol(
+                            &node_def.value.name,
+                            &pos,
+                            "builtin.node1",
+                            SymbolKind::NodeName,
+                        );
+                        assert!(node_def.value.inputs.is_some());
+                        if let Some(NodeInputDef::KeyValue(key_value)) = &node_def.value.inputs {
+                            pos.set(5, 5, 30, 58);
+                            assert_eq!(key_value.position, pos);
+                            assert_eq!(key_value.items.len(), 2);
+                            pos.set(5, 5, 30, 38);
+                            assert_symbol(
+                                &key_value.items[0].key,
+                                &pos,
+                                "data.key",
+                                SymbolKind::NodeInputKey,
+                            );
+                            pos.set(5, 5, 39, 40);
+                            if let AstNodeEnum::Symbol(value) = &*key_value.items[0].value {
+                                assert_symbol(&value, &pos, "c", SymbolKind::NodeInput);
+                            } else {
+                                panic!("Expected NodeInputValue::Symbol");
+                            }
+                        } else {
+                            panic!("Expected NodeInputDef::KeyValue");
+                        }
+                        // TODO 测试input和attrs
+                        dbg!(&node_def.value.attrs);
+                    } else {
+                        panic!("Expected NodeDef");
                     }
-                    // dbg!(&graph_def.children[1]);
-                    // TODO 测试input和attrs
                 }
                 _ => panic!("Expected GraphDef"),
             },

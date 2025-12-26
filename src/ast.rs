@@ -324,7 +324,7 @@ pub enum NodeInputDef {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct NodeInputTuple {
     pub position: Position,
-    pub items: Vec<Symbol>,
+    pub items: Vec<Box<AstNodeEnum>>,
 }
 
 /// Node input key-value definition
@@ -339,7 +339,7 @@ pub struct NodeInputKeyDef {
 pub struct NodeInputKeyItem {
     pub position: Position,
     pub key: Symbol,
-    pub value: NodeInputValues,
+    pub value: Box<AstNodeEnum>,
 }
 
 /// Node input values

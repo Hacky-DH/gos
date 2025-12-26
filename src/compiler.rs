@@ -338,16 +338,16 @@ impl Compiler {
         // Process node inputs
         if let Some(inputs) = &node_def.value.inputs {
             match inputs {
-                NodeInputDef::Tuple(tuple_inputs) => {
-                    node_dict.inputs = Some(tuple_inputs.items.iter().map(|s| s.name.clone()).collect());
+                NodeInputDef::Tuple(_tuple_inputs) => {
+                    // node_dict.inputs = Some(tuple_inputs.items.iter().map(|s| s.name.clone()).collect());
                 }
-                NodeInputDef::KeyValue(kv_inputs) => {
+                NodeInputDef::KeyValue(_kv_inputs) => {
                     // For key-value inputs, we need to process them differently
-                    let mut input_list = Vec::new();
-                    for item in &kv_inputs.items {
-                        input_list.extend(item.value.items.iter().map(|s| s.name.clone()));
-                    }
-                    node_dict.inputs = Some(input_list);
+                    // let mut input_list = Vec::new();
+                    // for item in &kv_inputs.items {
+                    //     input_list.extend(item.value.items.iter().map(|s| s.name.clone()));
+                    // }
+                    // node_dict.inputs = Some(input_list);
                 }
             }
         }
@@ -576,15 +576,17 @@ impl Compiler {
     fn extract_node_inputs(&self, node_block: &NodeBlock) -> ParseResult<Option<Vec<String>>> {
         if let Some(inputs) = &node_block.inputs {
             match inputs {
-                NodeInputDef::Tuple(tuple_inputs) => {
-                    Ok(Some(tuple_inputs.items.iter().map(|s| s.name.clone()).collect()))
+                NodeInputDef::Tuple(_tuple_inputs) => {
+                    // Ok(Some(tuple_inputs.items.iter().map(|s| s.name.clone()).collect()))
+                    Ok(None)
                 }
-                NodeInputDef::KeyValue(kv_inputs) => {
-                    let mut input_list = Vec::new();
-                    for item in &kv_inputs.items {
-                        input_list.extend(item.value.items.iter().map(|s| s.name.clone()));
-                    }
-                    Ok(Some(input_list))
+                NodeInputDef::KeyValue(_kv_inputs) => {
+                    // let mut input_list = Vec::new();
+                    // for item in &kv_inputs.items {
+                    //     input_list.extend(item.value.items.iter().map(|s| s.name.clone()));
+                    // }
+                    // Ok(Some(input_list))
+                    Ok(None)
                 }
             }
         } else {

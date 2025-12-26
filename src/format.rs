@@ -353,28 +353,28 @@ impl Formatter {
         let mut buffer = IndentBuffer::new(0, 0);
         
         match inputs {
-            NodeInputDef::Tuple(tuple) => {
-                for (index, item) in tuple.items.iter().enumerate() {
-                    buffer.write(&item.name);
-                    if index + 1 < tuple.items.len() {
-                        buffer.write(", ");
-                    }
-                }
+            NodeInputDef::Tuple(_tuple) => {
+                // for (index, item) in tuple.items.iter().enumerate() {
+                //     buffer.write(&item.name);
+                //     if index + 1 < tuple.items.len() {
+                //         buffer.write(", ");
+                //     }
+                // }
             }
             NodeInputDef::KeyValue(key_def) => {
-                for (index, item) in key_def.items.iter().enumerate() {
-                    if item.value.items.len() == 1 {
-                        buffer.writes(&[&item.key.name, "=", &item.value.items[0].name]);
-                    } else {
-                        buffer.writes(&[&item.key.name, "=("]);
-                        for (idx, val) in item.value.items.iter().enumerate() {
-                            buffer.write(&val.name);
-                            if idx + 1 < item.value.items.len() {
-                                buffer.write(", ");
-                            }
-                        }
-                        buffer.write(")");
-                    }
+                for (index, _item) in key_def.items.iter().enumerate() {
+                    // if item.value.items.len() == 1 {
+                    //     buffer.writes(&[&item.key.name, "=", &item.value.items[0].name]);
+                    // } else {
+                    //     buffer.writes(&[&item.key.name, "=("]);
+                    //     for (idx, val) in item.value.items.iter().enumerate() {
+                    //         buffer.write(&val.name);
+                    //         if idx + 1 < item.value.items.len() {
+                    //             buffer.write(", ");
+                    //         }
+                    //     }
+                    //     buffer.write(")");
+                    // }
                     if index + 1 < key_def.items.len() {
                         buffer.write(", ");
                     }
