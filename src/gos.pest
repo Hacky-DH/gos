@@ -191,17 +191,12 @@ node_attrs = {
     DOT ~ funnel ~ LPAREN ~ node_param_block ~ RPAREN
 }
 
-inputs_def = { inputs_tuple_def | inputs_key_defs }
-one_inputs_def = { dotted_name | dict_stmt }
+inputs_def = { inputs_key_defs | inputs_tuple_def }
+one_inputs_def = { dotted_name | value }
 inputs_tuple_def = { one_inputs_def ~ (COMMA ~ one_inputs_def)* }
 
 inputs_key_defs = { inputs_key_def ~ (COMMA ~ inputs_key_def)* }
-inputs_key_def = { dotted_name ~ DEFINED_BY ~ input_identifiers_paren }
-input_identifiers_paren = {
-    dotted_name |
-    LPAREN ~ dotted_name ~ COMMA ~ RPAREN |
-    LPAREN ~ dotted_name ~ COMMA ~ comma_dotted_names ~ RPAREN
-}
+inputs_key_def = { dotted_name ~ DEFINED_BY ~ one_inputs_def }
 
 node_param_block = { node_param_comment+ }
 node_param_comment = { param_def ~ COMMA? | COMMENT }

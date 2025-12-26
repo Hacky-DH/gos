@@ -935,14 +935,14 @@ graph {
 graph {
     description = "Complex test pipeline";
     
-    a, b , c = builtin.node1().with(
+    a, b , c = builtin.node1(data.key=c, data.value=d).with(
         description="node1 description",
         attr1="demo attr",
         attr2=23.8,
         attr3=true
     ).version('1.1.0');
     
-    e.d, f.g.h = builtin.node2(a, b).with(
+    e.d, f.g.h = ref(builtin.node2(a, b, {"key": "value"})).with(
         attr1=42,
         attr2="test"
     ).version("1.2.0").as(d)
@@ -977,17 +977,19 @@ graph {
                         pos.set(5, 10, 5, 24);
                         assert_eq!(node_def.position, pos);
                         assert_eq!(node_def.outputs.len(), 3);
-                        pos.set(5, 5, 5,6);
+                        pos.set(5, 5, 5, 6);
                         assert_symbol(&node_def.outputs[0], &pos, "a", SymbolKind::NodeOutput);
-                        pos.set(5, 5, 8,9);
+                        pos.set(5, 5, 8, 9);
                         assert_symbol(&node_def.outputs[1], &pos, "b", SymbolKind::NodeOutput);
-                        pos.set(5, 5, 12,13);
+                        pos.set(5, 5, 12, 13);
                         assert_symbol(&node_def.outputs[2], &pos, "c", SymbolKind::NodeOutput);
-                        pos.set(5, 10, 16,23);
+                        pos.set(5, 10, 16, 23);
                         assert_eq!(node_def.value.position, pos);
+                        pos.set(5, 5, 16, 29);
+                        assert_symbol(&node_def.value.name, &pos, "builtin.node1", SymbolKind::NodeName);
                         // node_def.value.position
                     }
-                    dbg!(&graph_def.children[1]);
+                    // dbg!(&graph_def.children[1]);
                     // TODO 测试input和attrs
                 }
                 _ => panic!("Expected GraphDef"),

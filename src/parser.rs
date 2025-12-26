@@ -925,7 +925,7 @@ impl GosParserImpl {
     ) -> ParseResult<AstNodeEnum> {
         let block_position = self.get_position(&pair);
         let mut node_name = None;
-        let mut _inputs: Vec<AstNodeEnum> = Vec::new();
+        let mut inputs = None;
         let mut _attributes: Vec<AstNodeEnum> = Vec::new();
 
         let outputs = self.parse_comma_dotted_names(name_pair, SymbolKind::NodeOutput)?;
@@ -937,7 +937,7 @@ impl GosParserImpl {
                     node_name = Some(self.parse_symbol(inner_pair, SymbolKind::NodeName)?);
                 }
                 Rule::inputs_def => {
-                    // Parse inputs if needed
+                    inputs = Some(self.parse_node_inputs_def(inner_pair)?);
                 }
                 Rule::node_attrs => {
                     // Parse attributes like .with(...)
@@ -957,7 +957,7 @@ impl GosParserImpl {
             value: NodeBlock {
                 position: block_position.clone(),
                 name: node_name.unwrap(),
-                inputs: None,
+                inputs: inputs,
                 attrs: None,
             },
         }))
@@ -1057,8 +1057,7 @@ impl GosParserImpl {
         for inner_pair in pair.into_inner() {
             match inner_pair.as_rule() {
                 Rule::dotted_name => {
-                    name =
-                        self.parse_dotted_name_as_symbol(inner_pair, SymbolKind::NodeName)?;
+                    name = self.parse_dotted_name_as_symbol(inner_pair, SymbolKind::NodeName)?;
                 }
                 Rule::inputs_def => {
                     inputs = Some(self.parse_node_inputs_def(inner_pair)?);
@@ -1089,6 +1088,7 @@ impl GosParserImpl {
     ) -> ParseResult<NodeInputDef> {
         let position = self.get_position(&pair);
         for inner_pair in pair.into_inner() {
+            self.debug(&inner_pair);
             match inner_pair.as_rule() {
                 Rule::inputs_tuple_def => {
                     return self.parse_inputs_tuple(inner_pair);
@@ -1138,12 +1138,10 @@ impl GosParserImpl {
     ) -> ParseResult<NodeInputDef> {
         let position = self.get_position(&pair);
         let mut items = Vec::new();
-
         for inner_pair in pair.into_inner() {
+            self.debug(&inner_pair);
             if inner_pair.as_rule() == Rule::inputs_key_def {
-                if let Ok(key_item) = self.parse_inputs_key_def(inner_pair) {
-                    items.push(key_item);
-                }
+                items.push(self.parse_inputs_key_def(inner_pair)?);
             }
         }
 

@@ -136,19 +136,6 @@ pub struct Ref {
     pub name: Symbol,
 }
 
-/// Literal value types
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum LiteralValue {
-    String(StringLiteral),
-    MultiLineString(MultiLineStringLiteral),
-    Number(NumberLiteral),
-    Float(FloatLiteral),
-    Bool(BoolLiteral),
-    DateTime(DateTimeLiteral),
-    Date(DateLiteral),
-    Null(NullLiteral),
-}
-
 /// String literal
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct StringLiteral {
@@ -206,15 +193,6 @@ pub struct DateLiteral {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct NullLiteral {
     pub position: Position,
-}
-
-/// Collection types
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub enum CollectionValue {
-    Dict(DictStatement),
-    List(ListStatement),
-    Tuple(TupleStatement),
-    Set(SetStatement),
 }
 
 /// Dictionary statement
