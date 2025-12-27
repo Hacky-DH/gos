@@ -184,11 +184,7 @@ node_attrs = {
     DOT ~ with ~ LPAREN ~ node_param_block ~ RPAREN |
     DOT ~ as_keyword ~ LPAREN ~ all_identifier ~ RPAREN |
     DOT ~ condition ~ LPAREN ~ STRING ~ RPAREN |
-    DOT ~ property ~ LPAREN ~ node_param_block ~ RPAREN |
-    DOT ~ override ~ LPAREN ~ override_param? ~ RPAREN |
-    DOT ~ log ~ LPAREN ~ node_param_block ~ RPAREN |
-    DOT ~ metrics ~ LPAREN ~ node_param_block ~ RPAREN |
-    DOT ~ funnel ~ LPAREN ~ node_param_block ~ RPAREN
+    DOT ~ property ~ LPAREN ~ node_param_block ~ RPAREN
 }
 
 inputs_def = { inputs_key_defs | inputs_tuple_def }
@@ -213,8 +209,6 @@ for_loop_block = {
     LBRACKET ~ for_loop_block_no_if ~ (if_keyword ~ if_condition)? ~ RBRACKET
 }
 for_loop_block_no_if = { node_block ~ for ~ comma_dotted_names ~ in ~ dotted_name }
-
-override_param = { NUMBER | BOOL }
 
 // Condition definitions
 condition_section = { condition_stmt ~ QUESTION ~ condition_node_stmt ~ COLON ~ condition_node_stmt }

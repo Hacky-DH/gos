@@ -965,7 +965,7 @@ graph {
     
     a, b , c = builtin.node1(data.key=c, data.value="abc").with(
         description="node1 description",
-        attr1="demo attr",
+        attr1=bar,
         attr2=23.8,
         attr3=true
     ).version('1.1.0');
@@ -974,22 +974,21 @@ graph {
         attr1=42,
         attr2="test"
     ).version("1.2.0").as(d)
-    .property(prop1=86,type="bar")
-    .log(level=0);
+    .property(prop1=86,type="bar");
 } as complex_pipeline.version("1.0.0");
 "#;
         let ast = assert_parse_success(content);
         match ast {
             AstNodeEnum::Module(module) => match &module.children[0] {
                 AstNodeEnum::GraphDef(graph_def) => {
-                    let mut pos = Position::new_all(18, 18, 6, 22);
+                    let mut pos = Position::new_all(17, 17, 6, 22);
                     assert_symbol_option(
                         &graph_def.alias,
                         &pos,
                         "complex_pipeline",
                         SymbolKind::GraphAsName,
                     );
-                    pos.set(18, 18, 31, 38);
+                    pos.set(17, 17, 31, 38);
                     assert_string_value(graph_def.version.clone().unwrap(), &pos, "1.0.0");
                     assert_eq!(graph_def.children.len(), 3);
                     if let AstNodeEnum::AttrDef(attr_def) = &graph_def.children[0] {
@@ -1043,11 +1042,78 @@ graph {
                         } else {
                             panic!("Expected NodeInputDef::KeyValue");
                         }
-                        // TODO 测试input和attrs
-                        dbg!(&node_def.value.attrs);
+                        assert!(node_def.value.attrs.is_some());
+                        let attrs = node_def.value.attrs.as_ref().unwrap();
+                        assert_eq!(attrs.len(), 2);
+                        pos.set(5, 5, 60, 64);
+                        assert_symbol(&attrs[0].name, &pos, "with", SymbolKind::NodeAttrName);
+                        if let NodeAttrValue::ListParamDef(params) = &attrs[0].value {
+                            assert_eq!(params.len(), 4);
+                            pos.set(6, 6, 9, 20);
+                            assert_symbol(
+                                &params[0].name,
+                                &pos,
+                                "description",
+                                SymbolKind::NodeParamKey,
+                            );
+                            pos.set(6, 6, 21, 40);
+                            assert_string_value(params[0].value.clone(), &pos, "node1 description");
+                            pos.set(7, 7, 9, 14);
+                            assert_symbol(&params[1].name, &pos, "attr1", SymbolKind::NodeParamKey);
+                            pos.set(7, 7, 15, 18);
+                            if let AstNodeEnum::Symbol(value) = &*params[1].value {
+                                assert_symbol(value, &pos, "bar", SymbolKind::NodeParamValue);
+                            } else {
+                                panic!("Expected NodeAttrValue::Symbol");
+                            }
+                            pos.set(9, 9, 15, 19);
+                            assert_bool_value(params[3].value.clone(), &pos, "true", true);
+                        } else {
+                            panic!("Expected NodeAttrValue::ListParamDef");
+                        }
+                        pos.set(10, 10, 7, 14);
+                        assert_symbol(&attrs[1].name, &pos, "version", SymbolKind::NodeAttrName);
+                        pos.set(10, 10, 15, 22);
+                        if let NodeAttrValue::String(string) = &attrs[1].value {
+                            assert_string_value(
+                                Box::new(AstNodeEnum::StringLiteral(string.clone())),
+                                &pos,
+                                "1.1.0",
+                            );
+                        } else {
+                            panic!("Expected NodeAttrValue::String");
+                        }
                     } else {
                         panic!("Expected NodeDef");
-                    }
+                    } // end of node1
+                    if let AstNodeEnum::NodeDef(node_def) = &graph_def.children[2] {
+                        assert_eq!(node_def.outputs.len(), 2);
+                        pos.set(12, 12, 5, 8);
+                        assert_symbol(&node_def.outputs[0], &pos, "e.d", SymbolKind::NodeOutput);
+                        assert!(node_def.value.inputs.is_some());
+                        if let Some(NodeInputDef::Tuple(tuple)) = &node_def.value.inputs {
+                            pos.set(12, 12, 36, 58);
+                            assert_eq!(tuple.position, pos);
+                            assert_eq!(tuple.items.len(), 3);
+                            pos.set(12, 12, 39, 40);
+                            if let AstNodeEnum::Symbol(value) = &*tuple.items[1] {
+                                assert_symbol(&value, &pos, "b", SymbolKind::NodeInput);
+                            } else {
+                                panic!("Expected NodeInputValue::Symbol");
+                            }
+                        } else {
+                            panic!("Expected NodeInputDef::Tuple");
+                        }
+                        assert!(node_def.value.attrs.is_some());
+                        let attrs = node_def.value.attrs.as_ref().unwrap();
+                        assert_eq!(attrs.len(), 4);
+                        pos.set(15, 15, 24, 26);
+                        assert_symbol(&attrs[2].name, &pos, "as", SymbolKind::NodeAttrName);
+                        pos.set(16, 16, 6, 14);
+                        assert_symbol(&attrs[3].name, &pos, "property", SymbolKind::NodeAttrName);
+                    } else {
+                        panic!("Expected NodeDef");
+                    } // end of node2
                 }
                 _ => panic!("Expected GraphDef"),
             },
@@ -1107,6 +1173,7 @@ multiline comment
 
 #[cfg(test)]
 mod mixed_content_tests {
+    use super::assert_ast::*;
     use crate::ast::*;
     use crate::tests::*;
 
@@ -1125,14 +1192,160 @@ var {
 # Graph definition
 graph {
     description = config.name;
-    node = builtin.processor().version(config.version);
+    node = builtin.processor().version("0.0.4");
 } as pipeline;
 "#;
         let ast = assert_parse_success(content);
 
         match ast {
             AstNodeEnum::Module(module) => {
-                assert_eq!(module.children.len(), 4); // comment, import, var, graph
+                assert_eq!(module.children.len(), 6);
+                dbg!(&module.children);
+                let mut pos = Position::new_all(2, 15, 1, 14);
+                assert_eq!(module.position, pos);
+                
+                // 验证第一个子节点：注释 (# Import statement)
+                match &module.children[0] {
+                    AstNodeEnum::Comment(comment) => {
+                        pos.set(2, 2, 1, 19);
+                        assert_eq!(comment.position, pos);
+                        assert_eq!(comment.value, "# Import statement");
+                    }
+                    _ => panic!("Expected Comment at index 0"),
+                }
+                
+                // 验证第二个子节点：导入语句
+                match &module.children[1] {
+                    AstNodeEnum::Import(import) => {
+                        pos.set(3, 3, 1, 15);
+                        assert_eq!(import.position, pos);
+                        assert_eq!(import.items.len(), 1);
+                        pos.set(3, 3, 8, 15);
+                        assert_symbol(&import.items[0].path, &pos, "builtin", SymbolKind::ImportName);
+                        assert!(import.items[0].alias.is_none());
+                    }
+                    _ => panic!("Expected Import at index 1"),
+                }
+                
+                // 验证第三个子节点：注释 (# Variable definition)
+                match &module.children[2] {
+                    AstNodeEnum::Comment(comment) => {
+                        pos.set(5, 5, 1, 22);
+                        assert_eq!(comment.position, pos);
+                        assert_eq!(comment.value, "# Variable definition");
+                    }
+                    _ => panic!("Expected Comment at index 2"),
+                }
+                
+                // 验证第四个子节点：变量定义
+                match &module.children[3] {
+                    AstNodeEnum::VarDef(var_def) => {
+                        pos.set(6, 9, 1, 12);
+                        assert_eq!(var_def.position, pos);
+                        assert_eq!(var_def.children.len(), 2);
+                        
+                        // 验证第一个属性定义 (name = "test pipeline")
+                        match &var_def.children[0] {
+                            AstNodeEnum::AttrDef(attr_def) => {
+                                pos.set(7, 7, 5, 27);
+                                assert_eq!(attr_def.position, pos);
+                                pos.set(7, 7, 5, 9);
+                                assert_symbol(&attr_def.name, &pos, "name", SymbolKind::VarAttr);
+                                pos.set(7, 7, 12, 27);
+                                assert_string_value(attr_def.value.clone(), &pos, "test pipeline");
+                            }
+                            _ => panic!("Expected AttrDef for name"),
+                        }
+                        
+                        // 验证第二个属性定义 (version = "1.0.0")
+                        match &var_def.children[1] {
+                            AstNodeEnum::AttrDef(attr_def) => {
+                                pos.set(8, 8, 5, 22);
+                                assert_eq!(attr_def.position, pos);
+                                pos.set(8, 8, 5, 12);
+                                assert_symbol(&attr_def.name, &pos, "version", SymbolKind::VarAttr);
+                                pos.set(8, 8, 15, 22);
+                                assert_string_value(attr_def.value.clone(), &pos, "1.0.0");
+                            }
+                            _ => panic!("Expected AttrDef for version"),
+                        }
+                        
+                        // 验证变量别名
+                        pos.set(9, 9, 6, 12);
+                        assert_symbol_option(&var_def.alias, &pos, "config", SymbolKind::VarAsName);
+                    }
+                    _ => panic!("Expected VarDef at index 3"),
+                }
+                
+                // 验证第五个子节点：注释 (# Graph definition)
+                match &module.children[4] {
+                    AstNodeEnum::Comment(comment) => {
+                        pos.set(11, 11, 1, 19);
+                        assert_eq!(comment.position, pos);
+                        assert_eq!(comment.value, "# Graph definition");
+                    }
+                    _ => panic!("Expected Comment at index 4"),
+                }
+                
+                // 验证第六个子节点：图定义
+                match &module.children[5] {
+                    AstNodeEnum::GraphDef(graph_def) => {
+                        pos.set(12, 15, 1, 14);
+                        assert_eq!(graph_def.position, pos);
+                        assert_eq!(graph_def.children.len(), 2);
+                        
+                        // 验证第一个子节点：引用定义 (description = config.name)
+                        match &graph_def.children[0] {
+                            AstNodeEnum::RefDef(ref_def) => {
+                                pos.set(13, 13, 5, 31);
+                                assert_eq!(ref_def.position, pos);
+                                pos.set(13, 13, 5, 16);
+                                assert_symbol(&ref_def.name, &pos, "description", SymbolKind::GraphProperty);
+                                pos.set(13, 13, 19, 30);
+                                assert_symbol(&ref_def.value, &pos, "config.name", SymbolKind::VarRef);
+                            }
+                            _ => panic!("Expected RefDef for description"),
+                        }
+                        
+                        // 验证第二个子节点：节点定义 (node = builtin.processor().version("0.0.4"))
+                        match &graph_def.children[1] {
+                            AstNodeEnum::NodeDef(node_def) => {
+                                pos.set(14, 14, 5, 49);
+                                assert_eq!(node_def.position, pos);
+                                assert_eq!(node_def.outputs.len(), 1);
+                                pos.set(14, 14, 5, 9);
+                                assert_symbol(&node_def.outputs[0], &pos, "node", SymbolKind::NodeOutput);
+                                
+                                // 验证节点块
+                                pos.set(14, 14, 12, 48);
+                                assert_eq!(node_def.value.position, pos);
+                                pos.set(14, 14, 12, 29);
+                                assert_symbol(&node_def.value.name, &pos, "builtin.processor", SymbolKind::NodeName);
+                                
+                                // 验证属性
+                                assert!(node_def.value.attrs.is_some());
+                                let attrs = node_def.value.attrs.as_ref().unwrap();
+                                assert_eq!(attrs.len(), 1);
+                                pos.set(14, 14, 32, 39);
+                                assert_symbol(&attrs[0].name, &pos, "version", SymbolKind::NodeAttrName);
+                                match &attrs[0].value {
+                                    NodeAttrValue::String(string_lit) => {
+                                        pos.set(14, 14, 40, 47);
+                                        assert_eq!(string_lit.position, pos);
+                                        assert_eq!(string_lit.value, "0.0.4");
+                                    }
+                                    _ => panic!("Expected NodeAttrValue::String"),
+                                }
+                            }
+                            _ => panic!("Expected NodeDef for node"),
+                        }
+                        
+                        // 验证图别名
+                        pos.set(15, 15, 6, 14);
+                        assert_symbol_option(&graph_def.alias, &pos, "pipeline", SymbolKind::GraphAsName);
+                    }
+                    _ => panic!("Expected GraphDef at index 5"),
+                }
             }
             _ => panic!("Expected Module"),
         }

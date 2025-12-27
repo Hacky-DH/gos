@@ -361,12 +361,8 @@ impl Compiler {
                 let value = match &attr.value {
                     NodeAttrValue::Symbol(symbol) => Value::String(symbol.name.clone()),
                     NodeAttrValue::String(string_lit) => Value::String(string_lit.value.clone()),
-                    NodeAttrValue::List(list) => {
-                        let list_values: Result<Vec<Value>, _> = list.iter()
-                            .map(|item| self.convert_ast_to_value(item))
-                            .collect();
-                        Value::Array(list_values?)
-                    }
+                    NodeAttrValue::ListParamDef(_list) => {Value::Null}
+                    NodeAttrValue::ListSymbol(_list) => {Value::Null}
                 };
                 
                 let resolved_value = self.resolve_variable_references(&value, vars)?;
@@ -603,12 +599,14 @@ impl Compiler {
                 let value = match &attr.value {
                     NodeAttrValue::Symbol(symbol) => Value::String(symbol.name.clone()),
                     NodeAttrValue::String(string_lit) => Value::String(string_lit.value.clone()),
-                    NodeAttrValue::List(list) => {
-                        let list_values: Result<Vec<Value>, _> = list.iter()
-                            .map(|item| self.convert_ast_to_value(item))
-                            .collect();
-                        Value::Array(list_values?)
-                    }
+                    // NodeAttrValue::ListParams(list) => {
+                    //     let list_values: Result<Vec<Value>, _> = list.iter()
+                    //         .map(|item| self.convert_ast_to_value(item))
+                    //         .collect();
+                    //     Value::Array(list_values?)
+                    // }
+                    NodeAttrValue::ListParamDef(_list) => {Value::Null}
+                    NodeAttrValue::ListSymbol(_list) => {Value::Null}
                 };
                 
                 let resolved_value = self.resolve_variable_references(&value, vars)?;

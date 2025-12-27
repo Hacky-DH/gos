@@ -926,8 +926,7 @@ impl GosParserImpl {
         let block_position = self.get_position(&pair);
         let mut node_name = None;
         let mut inputs = None;
-        let mut _attributes: Vec<AstNodeEnum> = Vec::new();
-
+        let mut attributes: Vec<NodeAttr> = Vec::new();
         let outputs = self.parse_comma_dotted_names(name_pair, SymbolKind::NodeOutput)?;
 
         for inner_pair in pair.into_inner() {
@@ -940,15 +939,14 @@ impl GosParserImpl {
                     inputs = Some(self.parse_node_inputs_def(inner_pair)?);
                 }
                 Rule::node_attrs => {
-                    // Parse attributes like .with(...)
-                    for attr_pair in inner_pair.into_inner() {
-                        if attr_pair.as_rule() == Rule::node_param_block {
-                            // Parse parameters
-                        }
-                    }
+                    attributes.push(self.parse_node_attr(inner_pair)?);
                 }
                 _ => {}
             }
+        }
+        let mut ret_attrs = None;
+        if !attributes.is_empty() {
+            ret_attrs = Some(attributes);
         }
 
         Ok(AstNodeEnum::NodeDef(NodeDef {
@@ -958,7 +956,7 @@ impl GosParserImpl {
                 position: block_position.clone(),
                 name: node_name.unwrap(),
                 inputs: inputs,
-                attrs: None,
+                attrs: ret_attrs,
             },
         }))
     }
@@ -1191,39 +1189,41 @@ impl GosParserImpl {
 
     fn parse_node_attr(&mut self, pair: pest::iterators::Pair<Rule>) -> ParseResult<NodeAttr> {
         let position = self.get_position(&pair);
-        let mut name = Symbol::new(position.clone(), "unknown".to_string());
-        let mut value = NodeAttrValue::Symbol(Symbol::new(position.clone(), "".to_string()));
-
-        // Parse .version("1.0.0") style attributes
+        let mut name = None;
+        let mut value = None;
         for inner_pair in pair.into_inner() {
+            self.debug(&inner_pair);
             match inner_pair.as_rule() {
-                Rule::version => {
-                    name = Symbol::new(position.clone(), "version".to_string())
-                        .with_kind(SymbolKind::NodeAttr);
+                Rule::name
+                | Rule::version
+                | Rule::depend
+                | Rule::with
+                | Rule::as_keyword
+                | Rule::condition
+                | Rule::property => {
+                    name = Some(self.parse_symbol(inner_pair, SymbolKind::NodeAttrName)?);
                 }
-                Rule::name => {
-                    name = Symbol::new(position.clone(), "name".to_string())
-                        .with_kind(SymbolKind::NodeAttr);
+                Rule::STRING => match self.parse_string_literal(inner_pair) {
+                    Ok(AstNodeEnum::StringLiteral(str_value)) => {
+                        value = Some(NodeAttrValue::String(str_value));
+                    }
+                    Ok(_) => {}
+                    Err(e) => {
+                        return Err(e);
+                    }
+                },
+                Rule::comma_dotted_names => {
+                    value = Some(NodeAttrValue::ListSymbol(
+                        self.parse_comma_dotted_names(inner_pair, SymbolKind::NodeDepend)?,
+                    ));
                 }
-                Rule::depend => {
-                    name = Symbol::new(position.clone(), "depend".to_string())
-                        .with_kind(SymbolKind::NodeAttr);
+                Rule::all_identifier => {
+                    value = Some(NodeAttrValue::Symbol(
+                        self.parse_symbol(inner_pair, SymbolKind::NodeAsName)?,
+                    ));
                 }
-                Rule::with => {
-                    name = Symbol::new(position.clone(), "with".to_string())
-                        .with_kind(SymbolKind::NodeAttr);
-                }
-                Rule::as_keyword => {
-                    name = Symbol::new(position.clone(), "as".to_string())
-                        .with_kind(SymbolKind::NodeAttr);
-                }
-                Rule::STRING => {
-                    let string_content = inner_pair.as_str();
-                    let unquoted = &string_content[1..string_content.len() - 1]; // Remove quotes
-                    value = NodeAttrValue::String(StringLiteral {
-                        position: self.get_position(&inner_pair),
-                        value: unquoted.to_string(),
-                    });
+                Rule::node_param_block => {
+                    value = Some(self.parse_node_param_block(inner_pair)?);
                 }
                 _ => {}
             }
@@ -1231,10 +1231,61 @@ impl GosParserImpl {
 
         Ok(NodeAttr {
             position,
-            name,
-            value,
+            name: name.unwrap(),
+            value: value.unwrap(),
             offset: None,
         })
+    }
+
+    fn parse_node_param_block(
+        &mut self,
+        pair: pest::iterators::Pair<Rule>,
+    ) -> ParseResult<NodeAttrValue> {
+        let mut params = Vec::new();
+        for inner_pair in pair.into_inner() {
+            // node_param_comment
+            for param_pair in inner_pair.into_inner() {
+                self.debug(&param_pair);
+                if param_pair.as_rule() == Rule::param_def {
+                    params.push(self.parse_param_def(param_pair)?);
+                }
+            }
+        }
+        Ok(NodeAttrValue::ListParamDef(params))
+    }
+
+    fn parse_param_def(&mut self, pair: pest::iterators::Pair<Rule>) -> ParseResult<ParamDef> {
+        for inner_pair in pair.into_inner() {
+            // attr_def/ref_def
+            let position = self.get_position(&inner_pair);
+            let mut param_pair = inner_pair.into_inner();
+            let name_pair = param_pair.next().unwrap();
+            let mut name = None;
+            let mut value = None;
+            if Rule::dotted_name == name_pair.as_rule() {
+                name = Some(self.parse_symbol(name_pair, SymbolKind::NodeParamKey)?);
+            } else {
+                return Err(ParseError::general("Not a valid param name"));
+            }
+            // skip =
+            param_pair.next();
+            let value_pair = param_pair.next().unwrap();
+            match value_pair.as_rule() {
+                Rule::value => value = Some(self.parse_value(value_pair)?),
+                Rule::dotted_name => {
+                    value = Some(AstNodeEnum::Symbol(
+                        self.parse_symbol(value_pair, SymbolKind::NodeParamValue)?,
+                    ))
+                }
+                _ => {}
+            }
+            return Ok(ParamDef {
+                position,
+                name: name.unwrap(),
+                value: Box::new(value.unwrap()),
+            });
+        }
+        Err(ParseError::general("Not a valid param definition"))
     }
 }
 

@@ -386,22 +386,24 @@ impl Formatter {
     }
 
     /// Format node attribute value
-    fn format_node_attr_value(&mut self, value: &NodeAttrValue, begin_indent: usize) -> String {
+    fn format_node_attr_value(&mut self, value: &NodeAttrValue, _begin_indent: usize) -> String {
         match value {
             NodeAttrValue::Symbol(sym) => sym.name.clone(),
             NodeAttrValue::String(str_lit) => str_lit.value.clone(),
-            NodeAttrValue::List(items) => {
-                let mut buffer = IndentBuffer::new(0, 0);
-                buffer.write("[");
-                for (index, item) in items.iter().enumerate() {
-                    buffer.write(&self.format_value(item, begin_indent));
-                    if index + 1 < items.len() {
-                        buffer.write(", ");
-                    }
-                }
-                buffer.write("]");
-                buffer.get_value().to_string()
-            }
+            // NodeAttrValue::ListParams(items) => {
+            //     let mut buffer = IndentBuffer::new(0, 0);
+            //     buffer.write("[");
+            //     for (index, item) in items.iter().enumerate() {
+            //         buffer.write(&self.format_value(item, begin_indent));
+            //         if index + 1 < items.len() {
+            //             buffer.write(", ");
+            //         }
+            //     }
+            //     buffer.write("]");
+            //     buffer.get_value().to_string()
+            // }
+            NodeAttrValue::ListParamDef(_list) => {"".to_string()}
+            NodeAttrValue::ListSymbol(_list) => {"".to_string()}
         }
     }
 

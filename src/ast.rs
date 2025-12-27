@@ -73,17 +73,17 @@ pub enum SymbolKind {
     NodeName,
     NodeOutput,
     NodeInput,
+    NodeInputKey,
     NodeDepend,
-    NodeProperty,
-    NodeAttr,
     NodeAsName,
+    NodeAttrName,
+    NodeParamKey,
+    NodeParamValue,
     OpAsName,
     OpMetaAttr,
     OpInputAttr,
     OpOutputAttr,
     OpConfigAttr,
-    NodeAttrName,
-    NodeInputKey,
     OpSpecDtype,
     ForLoopInputs,
     ForLoopOutputs,
@@ -363,7 +363,15 @@ pub struct NodeAttr {
 pub enum NodeAttrValue {
     Symbol(Symbol),
     String(StringLiteral),
-    List(Vec<AstNodeEnum>),
+    ListSymbol(Vec<Symbol>),
+    ListParamDef(Vec<ParamDef>),
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct ParamDef {
+    pub position: Position,
+    pub name: Symbol,
+    pub value: Box<AstNodeEnum>,
 }
 
 /// Condition definition
@@ -576,11 +584,13 @@ pub enum AstNodeEnum {
     GraphDef(GraphDef),
     NodeDef(NodeDef),
     NodeBlock(NodeBlock),
+    RefGraphBlock(RefGraphBlock),
     NodeInputTuple(NodeInputTuple),
     NodeInputKeyDef(NodeInputKeyDef),
     NodeInputKeyItem(NodeInputKeyItem),
     NodeInputValues(NodeInputValues),
     NodeAttr(NodeAttr),
+    ParamDef(ParamDef),
     ConditionDef(ConditionDef),
     ConditionBlock(ConditionBlock),
     ConditionStatement(ConditionStatement),
